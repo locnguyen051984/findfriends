@@ -2,6 +2,7 @@ package com.phaithanhcong.findfriends.controller;
 
 import com.phaithanhcong.findfriends.model.User;
 import com.phaithanhcong.findfriends.service.AuthService;
+import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -14,6 +15,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 public class AuthController {
     private final AuthService authService;
 
+    // ================== LOGIN ==================
+
     @GetMapping("/")
     public String login() {
         // Trả về file index.html (trang đăng nhập)
@@ -23,30 +26,43 @@ public class AuthController {
     @PostMapping("/login")
     public String handleLogin(@RequestParam String username,
                               @RequestParam String password,
+                              HttpSession session,
                               Model model) {
         User user = authService.login(username, password);
 
         if (user != null) {
-            // Đăng nhập thành công -> Chuyển hướng sang trang chủ (ví dụ: /home)
-            // Lưu ý: Nếu redirect:/index mà không có @GetMapping("/index") sẽ báo lỗi 404
+            // Lưu user vào session để các trang khác biết ai đang đăng nhập
+            session.setAttribute("loggedInUser", user);
             return "redirect:/home";
         } else {
-            // 1. Đẩy câu thông báo lỗi sang bên Thymeleaf
             model.addAttribute("errorMessage", "Tên đăng nhập hoặc mật khẩu không chính xác!");
-
-            // 2. Đẩy lại username để người dùng không phải gõ lại từ đầu
             model.addAttribute("username", username);
-
-            // 3. Trả về lại chính file index.html để hiển thị lỗi
             return "index";
         }
     }
 
-    // Trang đích sau khi đăng nhập thành công
+    // ================== HOME (cần đăng nhập mới vào được) ==================
+
     @GetMapping("/home")
-    public String home() {
-        return "home"; // Trả về file home.html (bạn cần tạo thêm file này)
+    public String home(HttpSession session, Model model) {
+        User user = (User) session.getAttribute("loggedInUser");
+        if (user == null) {
+            // Chưa đăng nhập mà cố vào /home -> đá về trang login
+            return "redirect:/";
+        }
+        model.addAttribute("username", user.getUserName());
+        return "home";
     }
+
+    // ================== LOGOUT ==================
+
+    @GetMapping("/logout")
+    public String logout(HttpSession session) {
+        session.invalidate(); // Xoá toàn bộ session -> đăng xuất
+        return "redirect:/";
+    }
+
+    // ================== REGISTER ==================
 
     @GetMapping("/register")
     public String register() {
@@ -70,8 +86,6 @@ public class AuthController {
         boolean success = authService.register(username, password, email, false);
 
         if (success) {
-            // Không redirect ngay, trả lại chính register.html kèm successMessage
-            // JS trong trang sẽ tự chuyển hướng sau 2 giây
             model.addAttribute("successMessage", "Đăng ký thành công! Đang chuyển sang trang đăng nhập...");
             return "register";
         } else {
@@ -81,6 +95,8 @@ public class AuthController {
             return "register";
         }
     }
+
+    // ================== FORGOT PASSWORD ==================
 
     @GetMapping("/forgot-password")
     public String forgotPassword() {
@@ -94,7 +110,6 @@ public class AuthController {
         boolean valid = authService.verifyAccount(username, email);
 
         if (valid) {
-            // Verify đúng -> chuyển sang trang đặt password mới, mang theo username
             return "redirect:/reset-password?username=" + username;
         } else {
             model.addAttribute("errorMessage", "Username hoặc email không khớp với tài khoản nào!");
@@ -103,6 +118,8 @@ public class AuthController {
             return "forgot-password";
         }
     }
+
+    // ================== RESET PASSWORD ==================
 
     @GetMapping("/reset-password")
     public String resetPasswordForm(@RequestParam String username, Model model) {
