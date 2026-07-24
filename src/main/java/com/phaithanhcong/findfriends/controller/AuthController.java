@@ -43,21 +43,7 @@ public class AuthController {
 
     // ================== HOME (cần đăng nhập mới vào được) ==================
 
-    @GetMapping("/home")
-    public String home(HttpSession session, Model model) {
-        User user = (User) session.getAttribute("loggedInUser");
-        if (user == null) {
-            // Chưa đăng nhập mà cố vào /home -> đá về trang login
-            return "redirect:/";
-        }
-        if (user.getRole() == null) {
-            // User tồn tại nhưng không có role -> không cho vào trang chủ
-            session.invalidate();
-            return "redirect:/";
-        }
-        model.addAttribute("username", user.getUserName());
-        return "home";
-    }
+
 
     // ================== LOGOUT ==================
 
