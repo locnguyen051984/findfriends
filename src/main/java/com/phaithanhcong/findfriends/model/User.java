@@ -27,4 +27,8 @@ public class User {
 
     @Column
     private boolean premium;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "role_id")
+    private Role role;
 }

@@ -30,7 +30,7 @@ public class AuthController {
                               Model model) {
         User user = authService.login(username, password);
 
-        if (user != null) {
+        if (user != null && user.getRole() != null) {
             // Lưu user vào session để các trang khác biết ai đang đăng nhập
             session.setAttribute("loggedInUser", user);
             return "redirect:/home";
@@ -48,6 +48,11 @@ public class AuthController {
         User user = (User) session.getAttribute("loggedInUser");
         if (user == null) {
             // Chưa đăng nhập mà cố vào /home -> đá về trang login
+            return "redirect:/";
+        }
+        if (user.getRole() == null) {
+            // User tồn tại nhưng không có role -> không cho vào trang chủ
+            session.invalidate();
             return "redirect:/";
         }
         model.addAttribute("username", user.getUserName());
