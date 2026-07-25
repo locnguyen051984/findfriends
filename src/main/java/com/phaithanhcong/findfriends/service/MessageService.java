@@ -23,10 +23,10 @@ public class MessageService {
 
     public Message sendMessage(User sender, User receiver, String content) {
         if (content == null || content.isBlank()) {
-            throw new IllegalArgumentException("Nội dung tin nhắn không được để trống");
+            throw new RuntimeException("Nội dung tin nhắn không được để trống");
         }
         if (sender.equals(receiver)) {
-            throw new IllegalArgumentException("Không thể tự nhắn tin cho chính mình");
+            throw new RuntimeException("Không thể tự nhắn tin cho chính mình");
         }
 
         User sender1 = userRepository.findById(sender.getId())
