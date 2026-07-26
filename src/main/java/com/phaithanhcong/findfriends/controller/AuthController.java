@@ -23,24 +23,32 @@ public class AuthController {
         return "index";
     }
 
-    @PostMapping("/login")
-    public String handleLogin(@RequestParam String username,
-                              @RequestParam String password,
-                              HttpSession session,
-                              Model model) {
-        User user = authService.login(username, password);
+   @PostMapping("/login")
+public String handleLogin(@RequestParam String username,
+                          @RequestParam String password,
+                          HttpSession session,
+                          Model model) {
+    User user = authService.login(username, password);
 
-        if (user != null && user.getRole() != null) {
-            // Lưu user vào session để các trang khác biết ai đang đăng nhập
-            session.setAttribute("loggedInUser", user);
-            return "redirect:/home";
-        } else {
-            model.addAttribute("errorMessage", "Tên đăng nhập hoặc mật khẩu không chính xác!");
-            model.addAttribute("username", username);
-            return "index";
+    if (user != null && user.getRole() != null) {
+        session.setAttribute("loggedInUser", user);
+
+        String roleName = user.getRole().getName();
+        if ("ADMIN".equals(roleName)) {
+            return "redirect:/admin-home";
         }
+        if ("USER".equals(roleName)) {
+            return "redirect:/home";
+        }
+        // Role lạ, không phải ADMIN cũng không phải USER
+        model.addAttribute("errorMessage", "Tài khoản không có quyền hợp lệ!");
+        return "index";
+    } else {
+        model.addAttribute("errorMessage", "Tên đăng nhập hoặc mật khẩu không chính xác!");
+        model.addAttribute("username", username);
+        return "index";
     }
-
+}
     // ================== HOME (cần đăng nhập mới vào được) ==================
 
 

@@ -54,14 +54,6 @@ public class AuthService {
         }
 
         if (user.getPassword().equals(password)) {
-            if (user.getRole() == null) {
-                Role role = roleRepository.findByName("USER");
-                if (role == null) {
-                    role = roleRepository.save(Role.builder().name("USER").build());
-                }
-                user.setRole(role);
-                userRepository.save(user);
-            }
             return user;
         }
         return null; // sai password

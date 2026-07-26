@@ -38,4 +38,6 @@ public class HomeController {
         model.addAttribute("otherUsers", otherUsers);
         return "home";
     }
+
+    
 }
