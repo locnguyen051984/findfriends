@@ -21,13 +21,12 @@ public class Message {
     @Column(name = "content", nullable = false)
     private String content;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "sender-id", nullable = false)
-    private User sender;
+    @Column(name = "sender_id", nullable = false)
+    private Long senderId;
 
-    @ManyToOne
-    @JoinColumn(name = "receiver-id")
-    private User receiver;
+        
+    @Column(name = "receiver_id", nullable = false)
+    private Long receiverId;
 
     @Column(name = "sentAt")
     private LocalDateTime sentAt;

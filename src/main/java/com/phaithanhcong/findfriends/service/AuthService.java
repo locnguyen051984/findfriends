@@ -18,6 +18,9 @@ public class AuthService {
     //Đăng ký
     public boolean register(String userName, String password, String email, boolean premium){
         Role role = roleRepository.findByName("USER");
+        if (role == null) {
+            role = roleRepository.save(Role.builder().name("USER").build());
+        }
 
         if(userName == null || userName.isEmpty() || password == null || password.isEmpty() || email == null || email.isEmpty()) {
             return false;
@@ -51,6 +54,14 @@ public class AuthService {
         }
 
         if (user.getPassword().equals(password)) {
+            if (user.getRole() == null) {
+                Role role = roleRepository.findByName("USER");
+                if (role == null) {
+                    role = roleRepository.save(Role.builder().name("USER").build());
+                }
+                user.setRole(role);
+                userRepository.save(user);
+            }
             return user;
         }
         return null; // sai password

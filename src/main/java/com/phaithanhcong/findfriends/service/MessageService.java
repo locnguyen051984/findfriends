@@ -25,9 +25,6 @@ public class MessageService {
         if (content == null || content.isBlank()) {
             throw new RuntimeException("Nội dung tin nhắn không được để trống");
         }
-        if (sender.equals(receiver)) {
-            throw new RuntimeException("Không thể tự nhắn tin cho chính mình");
-        }
 
         User sender1 = userRepository.findById(sender.getId())
                 .orElseThrow(() -> new RuntimeException("Sender không tồn tại"));
@@ -35,8 +32,8 @@ public class MessageService {
                 .orElseThrow(() -> new RuntimeException("Receiver không tồn tại"));
 
         Message message = Message.builder()
-                .sender(sender1)
-                .receiver(receiver1)
+                .senderId(sender1.getId())
+                .receiverId(receiver1.getId())
                 .content(content)
                 .sentAt(LocalDateTime.now())
                 .build();
@@ -44,9 +41,8 @@ public class MessageService {
         return messageRepository.save(message);
     }
 
-    public List<Message> getConversation(User sender, User receiver) {
+    public List<Message> getConversation(Long senderId, Long receiverId) {
         return messageRepository
-                .findBySenderIdAndReceiverIdOrReceiverIdAndSenderIdOrderBySentAtAsc(
-                        sender.getId(), receiver.getId());
+                .findBySenderIdAndReceiverId(senderId, receiverId);
     }
 }
