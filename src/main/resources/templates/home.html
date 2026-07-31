@@ -5,7 +5,6 @@
     <meta charset="UTF-8">
     <title>Find Friends - Home</title>
 </head>
-
 <body>
     <div>
         <span>Xin chào, <b th:text="${username}"></b>!</span> |
@@ -33,10 +32,9 @@
             </tr>
             <tr th:if="${#lists.isEmpty(otherUsers)}">
                 <td colspan="4" style="text-align: center; color: gray;">Chưa có người dùng nào khác trong DB. Hãy mở
-                    tab ẩn danh đăng ký thêm 1 tài khoản khác để test nhắn tin nhé!</td>
+                    tab  ẩn danh đăng ký thêm 1 tài khoản khác để test nhắn tin nhé!</td>
             </tr>
         </tbody>
     </table>
 </body>
-
 </html>

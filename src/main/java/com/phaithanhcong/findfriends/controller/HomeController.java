@@ -20,16 +20,13 @@ public class HomeController {
     public String home(HttpSession session, Model model) {
         User user = (User) session.getAttribute("loggedInUser");
         if (user == null) {
-            // Chưa đăng nhập mà cố vào /home -> đá về trang login
             return "redirect:/";
         }
         if (user.getRole() == null) {
-            // User tồn tại nhưng không có role -> không cho vào trang chủ
             session.invalidate();
             return "redirect:/";
         }
 
-        // Lấy danh sách tất cả các user khác trong DB (trừ bản thân mình)
         List<User> otherUsers = userRepository.findAll().stream()
                 .filter(u -> !u.getId().equals(user.getId()))
                 .toList();
