@@ -5,12 +5,15 @@ import com.phaithanhcong.findfriends.model.User;
 import com.phaithanhcong.findfriends.repository.UserRepository;
 import com.phaithanhcong.findfriends.service.MessageService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.servlet.http.HttpSession;
 import java.util.List;
+import java.util.Map;
 
 @Controller
 @RequestMapping("/messages")
@@ -19,6 +22,8 @@ public class MessageController {
 
     private final MessageService messageService;
     private final UserRepository userRepository;
+    private final SimpMessagingTemplate messagingTemplate;
+
 
     @GetMapping("/{otherUserId}")
     public String showConversation(
@@ -43,7 +48,7 @@ public class MessageController {
         return "message"; // -> templates/message.html
     }
 
-    @PostMapping("/{otherUserId}")
+    /*@PostMapping("/{otherUserId}")
     public String sendMessage(
             @PathVariable Long otherUserId,
             @RequestParam String content,
@@ -72,6 +77,33 @@ public class MessageController {
     }
 
     // Lấy trực tiếp từ session, không cần query lại DB
+    private User getCurrentUser(HttpSession session) {
+        return (User) session.getAttribute("loggedInUser");
+    }
+}*/
+@MessageMapping("/chat.send")
+    public void sendMessage(Map<String, Object> payload) {
+        Long senderId = Long.valueOf(payload.get("senderId").toString());
+        Long receiverId = Long.valueOf(payload.get("receiverId").toString());
+        String content = payload.get("content").toString();
+
+        User sender = userRepository.findById(senderId)
+                .orElseThrow(() -> new RuntimeException("Sender không tồn tại"));
+        User receiver = userRepository.findById(receiverId)
+                .orElseThrow(() -> new RuntimeException("Receiver không tồn tại"));
+
+        Message saved = messageService.sendMessage(sender, receiver, content);
+
+        String topic = "/topic/messages/" + conversationId(sender.getId(), receiver.getId());
+        messagingTemplate.convertAndSend(topic, saved);
+    }
+
+    private String conversationId(Long id1, Long id2) {
+        long min = Math.min(id1, id2);
+        long max = Math.max(id1, id2);
+        return min + "-" + max;
+    }
+
     private User getCurrentUser(HttpSession session) {
         return (User) session.getAttribute("loggedInUser");
     }

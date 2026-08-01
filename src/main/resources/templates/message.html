@@ -1,78 +1,159 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chat với <span th:text="${otherUser.userName}"></span></title>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Message</title>
     <style>
-        body {
-            font-family: sans-serif;
-            max-width: 600px;
-            margin: 30px auto;
-        }
+      body {
+        font-family: sans-serif;
+        max-width: 600px;
+        margin: 30px auto;
+      }
 
-        .msg {
-            margin: 8px 0;
-            padding: 8px 12px;
-            border-radius: 8px;
-            max-width: 70%;
-        }
+      .msg {
+        margin: 8px 0;
+        padding: 8px 12px;
+        border-radius: 8px;
+        max-width: 70%;
+      }
 
-        .msg.me {
-            background: #d1f0ff;
-            margin-left: auto;
-            text-align: right;
-        }
+      .msg.me {
+        background: #d1f0ff;
+        margin-left: auto;
+        text-align: right;
+      }
 
-        .msg.other {
-            background: #f0f0f0;
-        }
+      .msg.other {
+        background: #f0f0f0;
+      }
 
-        .msg small {
-            display: block;
-            color: #888;
-            font-size: 11px;
-        }
+      .msg small {
+        display: block;
+        color: #888;
+        font-size: 11px;
+      }
 
-        .error {
-            color: red;
-        }
+      .error {
+        color: red;
+      }
 
-        form {
-            display: flex;
-            gap: 8px;
-            margin-top: 16px;
-        }
+      form {
+        display: flex;
+        gap: 8px;
+        margin-top: 16px;
+      }
 
-        input[type=text] {
-            flex: 1;
-            padding: 8px;
-        }
+      input[type="text"] {
+        flex: 1;
+        padding: 8px;
+      }
     </style>
-</head>
+  </head>
 
-<body>
-    <div style="margin-bottom: 12px;">
-        <a href="/home" style="text-decoration: none; font-weight: bold; color: #555;">⬅️ Quay lại Trang chủ</a>
+  <body>
+    <div style="margin-bottom: 12px">
+      <a
+        href="/home"
+        style="text-decoration: none; font-weight: bold; color: #555"
+        >⬅️ Quay lại Trang chủ</a
+      >
     </div>
 
-    <h2>Chat với <span th:text="${otherUser.userName}"></span> (ID: <span th:text="${otherUser.id}"></span>)</h2>
+    <h2>
+      Chat với <span th:text="${otherUser.userName}"></span>
+    </h2>
 
     <div th:if="${error}" class="error" th:text="${error}"></div>
 
     <div id="chat-box">
-        <div th:each="msg : ${conversation}" th:class="${msg.senderId == currentUser.id} ? 'msg me' : 'msg other'">
-            <span th:text="${msg.content}"></span>
-            <small th:text="${#temporals.format(msg.sentAt, 'HH:mm dd/MM/yyyy')}"></small>
-        </div>
+      <div
+        th:each="msg : ${conversation}"
+        th:class="${msg.senderId == currentUser.id} ? 'msg me' : 'msg other'"
+      >
+        <span th:text="${msg.content}"></span>
+        <small
+          th:text="${#temporals.format(msg.sentAt, 'HH:mm dd/MM/yyyy')}"
+        ></small>
+      </div>
     </div>
 
-    <form th:action="@{/messages/{id}(id=${otherUser.id})}" method="post">
-        <input type="text" name="content" placeholder="Nhập tin nhắn..." required autofocus />
-        <button type="submit">Gửi</button>
+    <form id="chat-form">
+      <input
+        type="text"
+        id="content-input"
+        placeholder="Nhập tin nhắn..."
+        required
+        autofocus
+      />
+      <button type="submit">Gửi</button>
     </form>
 
-</body>
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7/bundles/stomp.umd.min.js"></script>
 
+    <script th:inline="javascript">
+      const currentUserId = /*[[${currentUser.id}]]*/ 0;
+      const otherUserId = /*[[${otherUser.id}]]*/ 0;
+      const chatBox = document.getElementById("chat-box");
+
+      // Tên "phòng chat" chung cho 2 người, luôn giống nhau dù ai mở trước
+      const conversationId = [currentUserId, otherUserId].sort((a, b) => a - b).join("-");
+
+      // Bước 1: Kết nối tới server
+      const stompClient = new StompJs.Client({
+        webSocketFactory: () => new SockJS("/ws"),
+        onConnect: onConnected,
+      });
+      stompClient.activate();
+
+      // Bước 2: Khi kết nối xong, lắng nghe tin nhắn mới của đúng phòng chat này
+      function onConnected() {
+        stompClient.subscribe(
+          "/topic/messages/" + conversationId,
+          onMessageReceived,
+        );
+      }
+
+      // Bước 3: Có tin mới thì hiển thị lên màn hình
+      function onMessageReceived(frame) {
+        const msg = JSON.parse(frame.body);
+        showMessage(msg);
+      }
+
+      // Bước 4: Tạo và thêm 1 bong bóng chat vào khung chat
+      function showMessage(msg) {
+        const isMine = msg.senderId === currentUserId;
+
+        const div = document.createElement("div");
+        div.className = "msg " + (isMine ? "me" : "other");
+        div.innerHTML = `<span>${msg.content}</span><small>${new Date(msg.sentAt).toLocaleString("vi-VN")}</small>`;
+
+        chatBox.appendChild(div);
+        div.scrollIntoView();
+      }
+
+      // Bước 5: Khi bấm nút Gửi, gửi tin nhắn lên server
+      document.getElementById("chat-form").addEventListener("submit", onFormSubmit);
+
+      function onFormSubmit(e) {
+        e.preventDefault();
+
+        const input = document.getElementById("content-input");
+        const content = input.value.trim();
+        if (!content) return;
+
+        stompClient.publish({
+          destination: "/app/chat.send",
+          body: JSON.stringify({
+            senderId: currentUserId,
+            receiverId: otherUserId,
+            content: content,
+          }),
+        });
+
+        input.value = "";
+      }
+    </script>
+  </body>
 </html>
