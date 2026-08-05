@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Find Friends - Admin Login</title>
+</head>
+<body>
+<h1>Welcome to Admin Dashboard</h1>
+
+<p th:if="${errorMessage}" th:text="${errorMessage}" style="color: red; font-weight: bold;"></p>
+
+<form th:action="@{/admin/login}" method="post">
+    <div>
+        <label for="username">Admin Username:</label>
+        <input type="text" id="username" name="username" th:value="${username}" required>
+    </div>
+    <br>
+    <div>
+        <label for="password">Password:</label>
+        <input type="password" id="password" name="password" required>
+    </div>
+    <br>
+    <button type="submit">Login as Admin</button>
+</form>
+</body>
+</html>

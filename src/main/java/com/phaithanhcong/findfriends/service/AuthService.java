@@ -1,8 +1,6 @@
 package com.phaithanhcong.findfriends.service;
 
-import com.phaithanhcong.findfriends.model.Role;
 import com.phaithanhcong.findfriends.model.User;
-import com.phaithanhcong.findfriends.repository.RoleRepository;
 import com.phaithanhcong.findfriends.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -13,15 +11,9 @@ public class AuthService {
 
     // 1. Phải có từ khóa 'final' để @RequiredArgsConstructor làm việc và inject UserRepository
     private final UserRepository userRepository;
-    private final RoleRepository roleRepository;
 
     //Đăng ký
     public boolean register(String userName, String password, String email, boolean premium){
-        Role role = roleRepository.findByName("USER");
-        if (role == null) {
-            role = roleRepository.save(Role.builder().name("USER").build());
-        }
-
         if(userName == null || userName.isEmpty() || password == null || password.isEmpty() || email == null || email.isEmpty()) {
             return false;
         }
@@ -34,7 +26,6 @@ public class AuthService {
                         .password(password)
                         .email(email)
                         .premium(premium)
-                        .role(role)
                         .build()
         );
         return true;
