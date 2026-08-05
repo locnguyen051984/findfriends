@@ -11,13 +11,17 @@
         <a href="/logout">Đăng xuất</a>
     </div>
 
-    <table border="1" cellpadding="8" cellspacing="0" style="border-collapse: collapse; width: 100%; max-width: 600px;">
+    <div id="locationWarningBox"
+         style="display:none; background:#fff3cd; color:#856404; padding:12px; border-radius:6px; margin-bottom:16px; margin-top:12px; max-width:600px;"></div>
+
+    <table border="1" cellpadding="8" cellspacing="0" style="border-collapse: collapse; width: 100%; max-width: 700px;">
         <thead>
             <tr style="background-color: #f2f2f2;">
                 <th>ID</th>
                 <th>Username</th>
                 <th>Email</th>
                 <th>Hành động</th>
+                <th>Vị trí</th>
             </tr>
         </thead>
         <tbody>
@@ -29,12 +33,15 @@
                     <a th:href="@{/messages/{id}(id=${u.id})}"
                         style="text-decoration: none; font-weight: bold; color: blue;">💬 Nhắn tin</a>
                 </td>
+                <td class="location-cell" th:attr="data-user-id=${u.id}" style="color: gray;">Đang tải...</td>
             </tr>
             <tr th:if="${#lists.isEmpty(otherUsers)}">
-                <td colspan="4" style="text-align: center; color: gray;">Chưa có người dùng nào khác trong DB. Hãy mở
-                    tab  ẩn danh đăng ký thêm 1 tài khoản khác để test nhắn tin nhé!</td>
+                <td colspan="5" style="text-align: center; color: gray;">Chưa có người dùng nào khác trong DB. Hãy mở
+                    tab ẩn danh đăng ký thêm 1 tài khoản khác để test nhắn tin nhé!</td>
             </tr>
         </tbody>
     </table>
+
+    <script src="/js/home.js"></script>
 </body>
 </html>
