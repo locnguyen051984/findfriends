@@ -2,9 +2,9 @@ package com.phaithanhcong.findfriends.service;
 
 import com.phaithanhcong.findfriends.model.LoginLocation;
 import com.phaithanhcong.findfriends.model.User;
-import com.phaithanhcong.findfriends.model.UserLocation;
+
 import com.phaithanhcong.findfriends.repository.LoginLocationRepository;
-import com.phaithanhcong.findfriends.repository.UserLocationRepository;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -21,7 +21,6 @@ import java.util.Optional;
 public class LocationService {
 
     private final LoginLocationRepository loginLocationRepository;
-    private final UserLocationRepository userLocationRepository;
 
     private static final double EARTH_RADIUS_KM = 6371.0;
     private static final int HISTORY_SIZE = 10;
@@ -32,7 +31,7 @@ public class LocationService {
         double dLon = Math.toRadians(lon2 - lon1);
         double a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
                 + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
-                * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+                        * Math.sin(dLon / 2) * Math.sin(dLon / 2);
         double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
         return EARTH_RADIUS_KM * c;
     }
@@ -40,7 +39,7 @@ public class LocationService {
     public Optional<String> recordLoginAndCheckAnomaly(User user, double lat, double lon) {
 
         List<LoginLocation> recentLogins = loginLocationRepository
-                .findByUserIdOrderByLoginAtDesc(user.getId(), PageRequest.of(0, HISTORY_SIZE));
+                .findByUserOrderByLoginAtDesc(user);
 
         Optional<String> warning = Optional.empty();
 
@@ -52,36 +51,27 @@ public class LocationService {
             if (distance > ANOMALY_THRESHOLD_KM) {
                 warning = Optional.of(String.format(
                         "Cảnh báo bảo mật: Tài khoản vừa đăng nhập từ vị trí cách xa khoảng %.0f km so với vị trí thường dùng. Nếu không phải bạn, hãy đổi mật khẩu ngay!",
-                        distance
-                ));
+                        distance));
             }
         }
 
         loginLocationRepository.save(
                 LoginLocation.builder()
-                        .userId(user.getId())
+                        .user(user)
                         .latitude(lat)
                         .longitude(lon)
                         .loginAt(LocalDateTime.now())
-                        .build()
-        );
-
-        UserLocation location = userLocationRepository.findByUserId(user.getId())
-                .orElse(UserLocation.builder().userId(user.getId()).build());
-        location.setLatitude(lat);
-        location.setLongitude(lon);
-        location.setUpdatedAt(LocalDateTime.now());
-        userLocationRepository.save(location);
+                        .build());
 
         return warning;
     }
 
     public List<Map<String, Object>> getNearbyList(User currentUser, List<User> otherUsers) {
         List<Map<String, Object>> result = new ArrayList<>();
-        Optional<UserLocation> currentLoc = userLocationRepository.findByUserId(currentUser.getId());
+        Optional<LoginLocation> currentLoc = loginLocationRepository.findFirstByUserOrderByLoginAtDesc(currentUser);
 
         for (User other : otherUsers) {
-            Optional<UserLocation> otherLoc = userLocationRepository.findByUserId(other.getId());
+            Optional<LoginLocation> otherLoc = loginLocationRepository.findFirstByUserOrderByLoginAtDesc(other);
 
             Map<String, Object> entry = new LinkedHashMap<>();
             entry.put("id", other.getId());

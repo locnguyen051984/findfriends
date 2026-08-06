@@ -1,12 +1,15 @@
 package com.phaithanhcong.findfriends.repository;
 
 import com.phaithanhcong.findfriends.model.LoginLocation;
-import org.springframework.data.domain.Pageable;
+import com.phaithanhcong.findfriends.model.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface LoginLocationRepository extends JpaRepository<LoginLocation, Long> {
 
-    List<LoginLocation> findByUserIdOrderByLoginAtDesc(Long userId, Pageable pageable);
+    List<LoginLocation> findByUserOrderByLoginAtDesc(User user);
+
+    Optional<LoginLocation> findFirstByUserOrderByLoginAtDesc(User user);
 }

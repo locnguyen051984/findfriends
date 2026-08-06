@@ -17,8 +17,7 @@ public class LoginLocation {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "user_id", nullable = false)
-    private Long userId;
+   
 
     @Column(name = "latitude", nullable = false)
     private Double latitude;
@@ -28,4 +27,9 @@ public class LoginLocation {
 
     @Column(name = "loginAt")
     private LocalDateTime loginAt;
+
+     @ManyToOne
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
+    
 }
