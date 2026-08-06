@@ -1,11 +1,37 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Find Friends - Admin Home</title>
 </head>
 <body>
-    
+    <div>
+        <span>Xin chào Admin, <b th:text="${adminName}"></b>!</span> |
+        <a href="/admin/logout">Đăng xuất</a>
+    </div>
+
+    <h2>Danh sách người dùng hệ thống</h2>
+    <table border="1" cellpadding="8" cellspacing="0" style="border-collapse: collapse; width: 100%; max-width: 600px;">
+        <thead>
+            <tr style="background-color: #f2f2f2;">
+                <th>ID</th>
+                <th>Username</th>
+                <th>Email</th>
+                <th>Premium</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr th:each="u : ${users}">
+                <td th:text="${u.id}"></td>
+                <td th:text="${u.userName}"></td>
+                <td th:text="${u.email}"></td>
+                <td th:text="${u.premium ? 'Có' : 'Không'}"></td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(users)}">
+                <td colspan="4" style="text-align: center; color: gray;">Chưa có người dùng nào đăng ký.</td>
+            </tr>
+        </tbody>
+    </table>
 </body>
 </html>

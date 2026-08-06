@@ -22,10 +22,6 @@ public class HomeController {
         if (user == null) {
             return "redirect:/";
         }
-        if (user.getRole() == null) {
-            session.invalidate();
-            return "redirect:/";
-        }
 
         List<User> otherUsers = userRepository.findAll().stream()
                 .filter(u -> !u.getId().equals(user.getId()))
