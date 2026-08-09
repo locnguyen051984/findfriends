@@ -11,6 +11,14 @@
         <a href="/logout">Đăng xuất</a>
     </div>
 
+    <div style="margin: 12px 0;">
+        <span th:if="${session.loggedInUser.premium}" style="color: green; font-weight: bold;">⭐ Tài khoản Premium</span>
+        <span th:unless="${session.loggedInUser.premium}">
+            Tài khoản: Thường —
+            <a href="/payment" style="font-weight: bold; color: #d9534f;">Nâng cấp Premium</a>
+        </span>
+    </div>
+
     <div id="locationWarningBox"
          style="display:none; background:#fff3cd; color:#856404; padding:12px; border-radius:6px; margin-bottom:16px; margin-top:12px; max-width:600px;"></div>
 

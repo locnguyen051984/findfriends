@@ -6,7 +6,6 @@ import com.phaithanhcong.findfriends.model.User;
 import com.phaithanhcong.findfriends.repository.LoginLocationRepository;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
