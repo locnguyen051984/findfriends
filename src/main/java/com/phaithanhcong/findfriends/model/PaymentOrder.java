@@ -22,9 +22,11 @@ public class PaymentOrder {
 
     @Column(name = "user_id", nullable = false)
     private Long userId;
-    @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false)
+
+    @ManyToOne
+    @JoinColumn(name = "status_id", nullable = false)
     private PaymentStatus status;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 }

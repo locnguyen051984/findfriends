@@ -7,29 +7,64 @@
 </head>
 
 <body>
-<h1>Welcome to FindFriends</h1>
 
-<!-- Hiển thị thông báo lỗi màu đỏ nếu có errorMessage trong Model -->
-<p th:if="${errorMessage}" th:text="${errorMessage}" style="color: red; font-weight: bold;"></p>
+<div style="display: flex; gap: 40px;">
 
-<form th:action="@{/login}" method="post">
     <div>
-        <label for="username">Username:</label>
-        <!-- Giữ lại username vừa nhập qua th:value -->
-        <input type="text" id="username" name="username" th:value="${username}" required>
+        <h1>Welcome to FindFriends</h1>
+
+        <!-- Hiển thị thông báo lỗi màu đỏ nếu có errorMessage trong Model -->
+        <p th:if="${errorMessage}" th:text="${errorMessage}" style="color: red; font-weight: bold;"></p>
+
+        <form th:action="@{/login}" method="post">
+            <div>
+                <label for="username">Username:</label>
+                <!-- Giữ lại username vừa nhập qua th:value -->
+                <input type="text" id="username" name="username" th:value="${username}" required>
+            </div>
+            <br>
+            <div>
+                <label for="password">Password:</label>
+                <!-- Mật khẩu phải nhập lại từ đầu khi lỗi -->
+                <input type="password" id="password" name="password" required>
+            </div>
+            <br>
+            <button type="submit">Login</button>
+            <a href="/register">Chưa có tài khoản?</a>
+            <br>
+            <a href="/forgot-password">Quên mật khẩu?</a>
+        </form>
     </div>
-    <br>
+
+    <!-- ⚠️ BẢNG TEST - XÓA TRƯỚC KHI NỘP BÀI -->
     <div>
-        <label for="password">Password:</label>
-        <!-- Mật khẩu phải nhập lại từ đầu khi lỗi -->
-        <input type="password" id="password" name="password" required>
+        <h3> Tài khoản test</h3>
+        <table border="1" cellpadding="6" cellspacing="0">
+            <thead>
+                <tr>
+                    <th>Loại</th>
+                    <th>Username</th>
+                    <th>Password</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Admin</td>
+                    <td>admin</td>
+                    <td>1</td>
+                </tr>
+                <tr th:each="i : ${#numbers.sequence(1, 9)}">
+                    <td>User</td>
+                    <td th:text="'test' + ${i}"></td>
+                    <td>1</td>
+                </tr>
+            </tbody>
+        </table>
+        <p style="font-size: 12px;">test2, test4, test6, test8 = sẵn Premium</p>
     </div>
-    <br>
-    <button type="submit">Login</button>
-    <a href="/register">Chưa có tài khoản?</a>
-    <br>
-    <a href="/forgot-password">Quên mật khẩu?</a>
-</form>
+
+</div>
+
 </body>
 
 </html>

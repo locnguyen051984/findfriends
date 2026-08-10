@@ -1,7 +1,20 @@
 package com.phaithanhcong.findfriends.model;
 
-public enum PaymentStatus {
-    PENDING,
-    PAID,
-    CANCELLED
+import jakarta.persistence.*;
+import lombok.*;
+
+@Entity
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+@Table(name = "payment_statuses")
+public class PaymentStatus {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(name = "code", nullable = false, unique = true)
+    private String code;
 }

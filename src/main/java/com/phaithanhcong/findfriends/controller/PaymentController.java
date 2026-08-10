@@ -23,7 +23,7 @@ public class PaymentController {
     public String paymentPage(HttpSession session, Model model) {
         User user = (User) session.getAttribute("loggedInUser");
         model.addAttribute("user", user);
-        model.addAttribute("price", 50000);
+        model.addAttribute("price", paymentService.getPremiumPrice());
         return "payment";
     }
 
@@ -65,24 +65,27 @@ public class PaymentController {
             return ResponseEntity.badRequest().body("Không có đơn hàng nào");
         }
 
-        PaymentStatus status = paymentService.getStatus(orderCode);
-        if (status == null) {
-            return ResponseEntity.status(404).body("Không tìm thấy đơn hàng");
-        }
+        try {
+            String status = paymentService.getStatus(orderCode);
 
-        if (status == PaymentStatus.PAID) {
-            User user = paymentService.getUserIfPaid(orderCode);
-            if (user != null) {
-                session.setAttribute("loggedInUser", user);
+            if ("PAID".equals(status)) {
+                User user = paymentService.getUserIfPaid(orderCode);
+                if (user != null) {
+                    session.setAttribute("loggedInUser", user);
+                }
             }
-        }
 
-        return ResponseEntity.ok(Map.of("status", status.name()));
+            return ResponseEntity.ok(Map.of("status", status));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500).body("Lỗi kiểm tra trạng thái");
+        }
     }
+
     @GetMapping("/payment/test-mark-paid")
     @ResponseBody
     public ResponseEntity<?> testMarkPaid(@RequestParam Long orderCode) {
         paymentService.markAsPaidManually(orderCode);
         return ResponseEntity.ok("done");
-}
+    }
 }
