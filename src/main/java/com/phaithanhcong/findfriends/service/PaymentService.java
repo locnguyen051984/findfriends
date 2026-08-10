@@ -4,14 +4,17 @@ import com.phaithanhcong.findfriends.model.PaymentOrder;
 import com.phaithanhcong.findfriends.model.PaymentStatus;
 import com.phaithanhcong.findfriends.model.User;
 import com.phaithanhcong.findfriends.repository.PaymentOrderRepository;
+import com.phaithanhcong.findfriends.repository.PaymentStatusRepository;
 import com.phaithanhcong.findfriends.repository.UserRepository;
-import lombok.RequiredArgsConstructor;
 
+import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import vn.payos.PayOS;
 import vn.payos.model.v2.paymentRequests.CreatePaymentLinkRequest;
 import vn.payos.model.v2.paymentRequests.CreatePaymentLinkResponse;
+import vn.payos.model.v2.paymentRequests.PaymentLinkStatus;
 
 import java.time.LocalDateTime;
 
@@ -19,7 +22,7 @@ import java.time.LocalDateTime;
 @Service
 public class PaymentService {
 
-    private static final long PREMIUM_PRICE = 50000L;
+    private static final long PREMIUM_PRICE = 2000L;
 
     @Value("${payos.return-url}")
     private String returnUrl;
@@ -29,15 +32,22 @@ public class PaymentService {
 
     private final PayOS payOS;
     private final PaymentOrderRepository paymentOrderRepository;
+    private final PaymentStatusRepository paymentStatusRepository;
     private final UserRepository userRepository;
+
+    public long getPremiumPrice() {
+        return PREMIUM_PRICE;
+    }
 
     public CreatePaymentLinkResponse createPayment(User user) throws Exception {
         Long orderCode = System.currentTimeMillis() / 1000;
 
+        PaymentStatus pending = paymentStatusRepository.findByCode("PENDING").get();
+
         PaymentOrder order = PaymentOrder.builder()
                 .orderCode(orderCode)
                 .userId(user.getId())
-                .status(PaymentStatus.PENDING)
+                .status(pending)
                 .createdAt(LocalDateTime.now())
                 .build();
         paymentOrderRepository.save(order);
@@ -53,35 +63,42 @@ public class PaymentService {
         return payOS.paymentRequests().create(paymentData);
     }
 
-    public void processWebhook(String rawBody) throws Exception {
-        var webhookData = payOS.webhooks().verify(rawBody);
-
-        PaymentOrder order = paymentOrderRepository.findByOrderCode(webhookData.getOrderCode()).get();
-        order.setStatus(PaymentStatus.PAID);
+    @Transactional
+    public void markAsPaidManually(Long orderCode) {
+        PaymentOrder order = paymentOrderRepository.findByOrderCode(orderCode).get();
+        PaymentStatus paid = paymentStatusRepository.findByCode("PAID").get();
+        order.setStatus(paid);
         paymentOrderRepository.save(order);
 
         User user = userRepository.findById(order.getUserId()).get();
         user.setPremium(true);
         userRepository.save(user);
     }
+    
+    @Transactional
+    public void processWebhook(String rawBody) throws Exception {
+        var webhookData = payOS.webhooks().verify(rawBody);
+        markAsPaidManually(webhookData.getOrderCode());
+    }
 
-    public PaymentStatus getStatus(Long orderCode) {
-        return paymentOrderRepository.findByOrderCode(orderCode).get().getStatus();
+    public String getStatus(Long orderCode) throws Exception {
+        PaymentOrder order = paymentOrderRepository.findByOrderCode(orderCode).get();
+
+        if ("PAID".equals(order.getStatus().getCode())) {
+            return "PAID";
+        }
+
+        var paymentLinkInfo = payOS.paymentRequests().get(orderCode);
+        if (paymentLinkInfo.getStatus() == PaymentLinkStatus.PAID) {
+            markAsPaidManually(orderCode);
+            return "PAID";
+        }
+
+        return "PENDING";
     }
 
     public User getUserIfPaid(Long orderCode) {
         PaymentOrder order = paymentOrderRepository.findByOrderCode(orderCode).get();
-        return order.getStatus() == PaymentStatus.PAID ? userRepository.findById(order.getUserId()).get() : null;
+        return "PAID".equals(order.getStatus().getCode()) ? userRepository.findById(order.getUserId()).get() : null;
     }
-    public void markAsPaidManually(Long orderCode) {
-    PaymentOrder order = paymentOrderRepository.findByOrderCode(orderCode).get();
-    order.setStatus(PaymentStatus.PAID);
-    paymentOrderRepository.save(order);
-
-    User user = userRepository.findById(order.getUserId()).get();
-    user.setPremium(true);
-    userRepository.save(user);
-    }
-
-    
 }

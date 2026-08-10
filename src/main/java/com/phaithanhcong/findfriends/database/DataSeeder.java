@@ -3,9 +3,11 @@ package com.phaithanhcong.findfriends.database;
 import com.phaithanhcong.findfriends.model.Admin;
 import com.phaithanhcong.findfriends.model.User;
 import com.phaithanhcong.findfriends.model.Message;
+import com.phaithanhcong.findfriends.model.PaymentStatus;
 import com.phaithanhcong.findfriends.repository.AdminRepository;
 import com.phaithanhcong.findfriends.repository.LoginLocationRepository;
 import com.phaithanhcong.findfriends.repository.MessageRepository;
+import com.phaithanhcong.findfriends.repository.PaymentStatusRepository;
 import com.phaithanhcong.findfriends.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
@@ -23,9 +25,13 @@ public class DataSeeder implements CommandLineRunner {
     private final AdminRepository adminRepository;
     private final MessageRepository messageRepository;
     private final LoginLocationRepository locationRepository;
+    private final PaymentStatusRepository paymentStatusRepository;
 
     @Override
     public void run(String... args) {
+        seedPaymentStatusIfMissing("PENDING");
+        seedPaymentStatusIfMissing("PAID");
+
         // Clear all existing data in correct dependency order
         locationRepository.deleteAll();
         messageRepository.deleteAll();
@@ -47,12 +53,12 @@ public class DataSeeder implements CommandLineRunner {
                     .userName("test" + i)
                     .password("1")
                     .email("test" + i + "@gmail.com")
-                    .premium(i % 2 == 0) // Alternating premium status
+                    .premium(i % 2 == 0)
                     .build();
             users.add(userRepository.save(user));
         }
 
-        // 3. Seed Messages (Conversations between test1 and test2)
+        // 3. Seed Messages 
         messageRepository.save(Message.builder()
                 .senderId(users.get(0).getId())
                 .receiverId(users.get(1).getId())
@@ -88,7 +94,6 @@ public class DataSeeder implements CommandLineRunner {
                 .sentAt(LocalDateTime.now().minusMinutes(20))
                 .build());
 
-        // Chat between test1 and test3
         messageRepository.save(Message.builder()
                 .senderId(users.get(0).getId())
                 .receiverId(users.get(2).getId())
@@ -102,5 +107,11 @@ public class DataSeeder implements CommandLineRunner {
                 .content("Chào bạn, rất vui được làm quen.")
                 .sentAt(LocalDateTime.now().minusDays(1).plusMinutes(10))
                 .build());
+    }
+
+    private void seedPaymentStatusIfMissing(String code) {
+        if (paymentStatusRepository.findByCode(code).isEmpty()) {
+            paymentStatusRepository.save(PaymentStatus.builder().code(code).build());
+        }
     }
 }
