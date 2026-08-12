@@ -31,3 +31,8 @@ build/
 
 ### VS Code ###
 .vscode/
+
+face/.venv312/
+face/__pycache__/
+face/faces.db
+.venv312/
