@@ -5,33 +5,23 @@ import com.phaithanhcong.findfriends.service.PaymentService;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import vn.payos.model.v2.paymentRequests.CreatePaymentLinkResponse;
 
 import java.util.Map;
 
 @RequiredArgsConstructor
-@Controller
-public class PaymentController {
+@RestController
+@RequestMapping("/api/payment")
+public class PaymentControllerREST {
 
     private final PaymentService paymentService;
 
-    @GetMapping("/payment")
-    public String paymentPage(HttpSession session, Model model) {
-        User user = (User) session.getAttribute("loggedInUser");
-        model.addAttribute("user", user);
-        model.addAttribute("price", paymentService.getPremiumPrice());
-        return "payment";
-    }
-
-    @PostMapping("/payment/create")
-    @ResponseBody
+    @PostMapping("/create")
     public ResponseEntity<?> createPayment(HttpSession session) {
         User user = (User) session.getAttribute("loggedInUser");
         if (user == null) {
-            return ResponseEntity.status(401).body("Chưa đăng nhập");
+            return ResponseEntity.status(401).body(Map.of("message", "Chưa đăng nhập"));
         }
 
         try {
@@ -40,28 +30,15 @@ public class PaymentController {
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.status(500).body("Lỗi tạo thanh toán: " + e.getMessage());
+            return ResponseEntity.status(500).body(Map.of("message", "Lỗi tạo thanh toán: " + e.getMessage()));
         }
     }
 
-    @PostMapping("/payment/payos-webhook")
-    @ResponseBody
-    public ResponseEntity<?> handleWebhook(@RequestBody String rawBody) {
-        try {
-            paymentService.processWebhook(rawBody);
-            return ResponseEntity.ok(Map.of("success", true));
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.status(400).body("Webhook verify failed");
-        }
-    }
-
-    @GetMapping("/payment/check-status")
-    @ResponseBody
+    @GetMapping("/check-status")
     public ResponseEntity<?> checkStatus(HttpSession session) {
         Long orderCode = (Long) session.getAttribute("currentOrderCode");
         if (orderCode == null) {
-            return ResponseEntity.badRequest().body("Không có đơn hàng nào");
+            return ResponseEntity.badRequest().body(Map.of("message", "Không có đơn hàng nào"));
         }
 
         try {
@@ -77,14 +54,25 @@ public class PaymentController {
             return ResponseEntity.ok(Map.of("status", status));
         } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.status(500).body("Lỗi kiểm tra trạng thái");
+            return ResponseEntity.status(500).body(Map.of("message", "Lỗi kiểm tra trạng thái"));
         }
     }
 
-    @GetMapping("/payment/test-mark-paid")
-    @ResponseBody
+    @GetMapping("/test-mark-paid")
     public ResponseEntity<?> testMarkPaid(@RequestParam Long orderCode) {
         paymentService.markAsPaidManually(orderCode);
-        return ResponseEntity.ok("done");
+        return ResponseEntity.ok(Map.of("message", "done"));
+    }
+
+    // Giữ nguyên path cũ vì đây là URL đã cấu hình trên PayOS dashboard
+    @PostMapping("/payment/payos-webhook")
+    public ResponseEntity<?> handleWebhook(@RequestBody String rawBody) {
+        try {
+            paymentService.processWebhook(rawBody);
+            return ResponseEntity.ok(Map.of("success", true));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(400).body(Map.of("message", "Webhook verify failed"));
+        }
     }
 }
