@@ -2,11 +2,9 @@ package com.phaithanhcong.findfriends.service;
 
 import com.phaithanhcong.findfriends.model.LoginLocation;
 import com.phaithanhcong.findfriends.model.User;
-
 import com.phaithanhcong.findfriends.repository.LoginLocationRepository;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -25,25 +23,26 @@ public class LocationService {
     private static final double EARTH_RADIUS_KM = 6371.0;
     private static final int HISTORY_SIZE = 10;
     private static final double ANOMALY_THRESHOLD_KM = 100.0;
+    private static final double NEARBY_RADIUS_KM = 20.0;
 
     public double haversine(double lat1, double lon1, double lat2, double lon2) {
         double dLat = Math.toRadians(lat2 - lat1);
         double dLon = Math.toRadians(lon2 - lon1);
         double a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
                 + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
-                        * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+                * Math.sin(dLon / 2) * Math.sin(dLon / 2);
         double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
         return EARTH_RADIUS_KM * c;
     }
 
     public Optional<String> recordLoginAndCheckAnomaly(User user, double lat, double lon) {
 
-        List<LoginLocation> recentLogins = loginLocationRepository
-                .findByUserOrderByLoginAtDesc(user);
+        List<LoginLocation> allLogins = loginLocationRepository.findByUserOrderByLoginAtDesc(user);
 
         Optional<String> warning = Optional.empty();
 
-        if (recentLogins.size() >= HISTORY_SIZE) {
+        if (allLogins.size() >= HISTORY_SIZE) {
+            List<LoginLocation> recentLogins = allLogins.subList(0, HISTORY_SIZE);
             double avgLat = recentLogins.stream().mapToDouble(LoginLocation::getLatitude).average().orElse(lat);
             double avgLon = recentLogins.stream().mapToDouble(LoginLocation::getLongitude).average().orElse(lon);
             double distance = haversine(avgLat, avgLon, lat, lon);
@@ -81,7 +80,12 @@ public class LocationService {
                 double km = haversine(
                         currentLoc.get().getLatitude(), currentLoc.get().getLongitude(),
                         otherLoc.get().getLatitude(), otherLoc.get().getLongitude());
-                entry.put("distance", String.format("%.1f km", km));
+
+                if (km <= NEARBY_RADIUS_KM) {
+                    entry.put("distance", String.format("%.1f km", km));
+                } else {
+                    entry.put("distance", "Ngoài phạm vi " + (int) NEARBY_RADIUS_KM + "km");
+                }
             } else {
                 entry.put("distance", "Chưa có vị trí");
             }
