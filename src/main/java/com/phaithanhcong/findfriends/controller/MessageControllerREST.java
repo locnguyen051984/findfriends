@@ -1,5 +1,7 @@
 package com.phaithanhcong.findfriends.controller;
 
+import com.phaithanhcong.findfriends.dto.ConversationResponse;
+import com.phaithanhcong.findfriends.dto.UserResponse;
 import com.phaithanhcong.findfriends.model.Message;
 import com.phaithanhcong.findfriends.model.User;
 import com.phaithanhcong.findfriends.repository.UserRepository;
@@ -11,7 +13,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/messages")
@@ -25,8 +26,7 @@ public class MessageControllerREST {
     public ResponseEntity<?> showConversation(@PathVariable Long otherUserId, HttpSession session) {
         User currentUser = getCurrentUser(session);
         if (currentUser == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("message", "Chưa đăng nhập"));
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
         User otherUser = userRepository.findById(otherUserId)
@@ -34,11 +34,7 @@ public class MessageControllerREST {
 
         List<Message> conversation = messageService.getConversation(currentUser.getId(), otherUser.getId());
 
-        return ResponseEntity.ok(Map.of(
-                "conversation", conversation,
-                "currentUser", currentUser,
-                "otherUser", otherUser
-        ));
+        return ResponseEntity.ok(new ConversationResponse(conversation, UserResponse.fromEntity(currentUser), UserResponse.fromEntity(otherUser)));
     }
 
     @PostMapping("/{otherUserId}")
@@ -47,29 +43,24 @@ public class MessageControllerREST {
                                           HttpSession session) {
         User currentUser = getCurrentUser(session);
         if (currentUser == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("message", "Chưa đăng nhập"));
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
         User otherUser = userRepository.findById(otherUserId)
                 .orElseThrow(() -> new RuntimeException("Người dùng không tồn tại"));
 
+        UserResponse currentUserDto = UserResponse.fromEntity(currentUser);
+        UserResponse otherUserDto = UserResponse.fromEntity(otherUser);
+
         try {
             messageService.sendMessage(currentUser, otherUser, content);
             List<Message> conversation = messageService.getConversation(currentUser.getId(), otherUser.getId());
-            return ResponseEntity.ok(Map.of(
-                    "conversation", conversation,
-                    "currentUser", currentUser,
-                    "otherUser", otherUser
-            ));
+            return ResponseEntity.ok(new ConversationResponse(conversation, currentUserDto, otherUserDto));
         } catch (RuntimeException e) {
             List<Message> conversation = messageService.getConversation(currentUser.getId(), otherUser.getId());
-            return ResponseEntity.badRequest().body(Map.of(
-                    "conversation", conversation,
-                    "currentUser", currentUser,
-                    "otherUser", otherUser,
-                    "error", e.getMessage()
-            ));
+            return ResponseEntity.badRequest().body(
+                    new ConversationResponse(conversation, currentUserDto, otherUserDto, e.getMessage())
+            );
         }
     }
 

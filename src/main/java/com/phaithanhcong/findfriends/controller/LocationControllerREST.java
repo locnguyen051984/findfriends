@@ -28,8 +28,7 @@ public class LocationControllerREST {
         User currentUser = getCurrentUser(session);
 
         if (currentUser == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("message", "Chưa đăng nhập"));
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
         Map<String, String> response = new HashMap<>();
@@ -43,8 +42,7 @@ public class LocationControllerREST {
     public ResponseEntity<?> distances(HttpSession session) {
         User currentUser = getCurrentUser(session);
         if (currentUser == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("message", "Chưa đăng nhập"));
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
         List<User> otherUsers = userRepository.findAll().stream()

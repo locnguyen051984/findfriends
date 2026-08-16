@@ -1,5 +1,6 @@
 package com.phaithanhcong.findfriends.controller;
 
+import com.phaithanhcong.findfriends.dto.UserResponse;
 import com.phaithanhcong.findfriends.model.User;
 import com.phaithanhcong.findfriends.service.AuthService;
 import jakarta.servlet.http.HttpSession;
@@ -7,8 +8,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.Map;
 
 @RequiredArgsConstructor
 @RestController
@@ -26,12 +25,11 @@ public class AuthControllerREST {
         User user = authService.login(username, password);
 
         if (user == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("message", "Tên đăng nhập hoặc mật khẩu không chính xác!"));
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
         session.setAttribute("loggedInUser", user);
-        return ResponseEntity.ok(Map.of("message", "Đăng nhập thành công", "user", user));
+        return ResponseEntity.ok(UserResponse.fromEntity(user));
     }
 
     // ================== LOGOUT ==================
@@ -39,7 +37,7 @@ public class AuthControllerREST {
     @PostMapping("/logout")
     public ResponseEntity<?> logout(HttpSession session) {
         session.invalidate();
-        return ResponseEntity.ok(Map.of("message", "Đăng xuất thành công"));
+        return ResponseEntity.ok().build();
     }
 
     // ================== REGISTER ==================
@@ -50,18 +48,16 @@ public class AuthControllerREST {
                                        @RequestParam String confirmPassword,
                                        @RequestParam String email) {
         if (!password.equals(confirmPassword)) {
-            return ResponseEntity.badRequest()
-                    .body(Map.of("message", "Mật khẩu xác nhận không khớp!"));
+            return ResponseEntity.badRequest().build();
         }
 
         boolean success = authService.register(username, password, email, false);
 
         if (!success) {
-            return ResponseEntity.badRequest()
-                    .body(Map.of("message", "Đăng ký thất bại! Username đã tồn tại hoặc dữ liệu không hợp lệ."));
+            return ResponseEntity.badRequest().build();
         }
 
-        return ResponseEntity.ok(Map.of("message", "Đăng ký thành công"));
+        return ResponseEntity.ok().build();
     }
 
     // ================== FORGOT PASSWORD ==================
@@ -72,11 +68,10 @@ public class AuthControllerREST {
         boolean valid = authService.verifyAccount(username, email);
 
         if (!valid) {
-            return ResponseEntity.badRequest()
-                    .body(Map.of("message", "Username hoặc email không khớp với tài khoản nào!"));
+            return ResponseEntity.badRequest().build();
         }
 
-        return ResponseEntity.ok(Map.of("message", "Xác thực thành công", "username", username));
+        return ResponseEntity.ok().build();
     }
 
     // ================== RESET PASSWORD ==================
@@ -86,17 +81,15 @@ public class AuthControllerREST {
                                             @RequestParam String newPassword,
                                             @RequestParam String confirmNewPassword) {
         if (!newPassword.equals(confirmNewPassword)) {
-            return ResponseEntity.badRequest()
-                    .body(Map.of("message", "Mật khẩu xác nhận không khớp!"));
+            return ResponseEntity.badRequest().build();
         }
 
         boolean success = authService.resetPassword(username, newPassword);
 
         if (!success) {
-            return ResponseEntity.internalServerError()
-                    .body(Map.of("message", "Có lỗi xảy ra, vui lòng thử lại!"));
+            return ResponseEntity.internalServerError().build();
         }
 
-        return ResponseEntity.ok(Map.of("message", "Đổi mật khẩu thành công"));
+        return ResponseEntity.ok().build();
     }
 }

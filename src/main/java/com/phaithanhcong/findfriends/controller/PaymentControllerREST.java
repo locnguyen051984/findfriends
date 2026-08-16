@@ -1,5 +1,6 @@
 package com.phaithanhcong.findfriends.controller;
 
+import com.phaithanhcong.findfriends.dto.PaymentStatusResponse;
 import com.phaithanhcong.findfriends.model.User;
 import com.phaithanhcong.findfriends.service.PaymentService;
 import jakarta.servlet.http.HttpSession;
@@ -7,8 +8,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import vn.payos.model.v2.paymentRequests.CreatePaymentLinkResponse;
-
-import java.util.Map;
 
 @RequiredArgsConstructor
 @RestController
@@ -21,7 +20,7 @@ public class PaymentControllerREST {
     public ResponseEntity<?> createPayment(HttpSession session) {
         User user = (User) session.getAttribute("loggedInUser");
         if (user == null) {
-            return ResponseEntity.status(401).body(Map.of("message", "Chưa đăng nhập"));
+            return ResponseEntity.status(401).build();
         }
 
         try {
@@ -30,7 +29,7 @@ public class PaymentControllerREST {
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.status(500).body(Map.of("message", "Lỗi tạo thanh toán: " + e.getMessage()));
+            return ResponseEntity.status(500).build();
         }
     }
 
@@ -38,7 +37,7 @@ public class PaymentControllerREST {
     public ResponseEntity<?> checkStatus(HttpSession session) {
         Long orderCode = (Long) session.getAttribute("currentOrderCode");
         if (orderCode == null) {
-            return ResponseEntity.badRequest().body(Map.of("message", "Không có đơn hàng nào"));
+            return ResponseEntity.badRequest().build();
         }
 
         try {
@@ -51,17 +50,17 @@ public class PaymentControllerREST {
                 }
             }
 
-            return ResponseEntity.ok(Map.of("status", status));
+            return ResponseEntity.ok(new PaymentStatusResponse(status));
         } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.status(500).body(Map.of("message", "Lỗi kiểm tra trạng thái"));
+            return ResponseEntity.status(500).build();
         }
     }
 
     @GetMapping("/test-mark-paid")
     public ResponseEntity<?> testMarkPaid(@RequestParam Long orderCode) {
         paymentService.markAsPaidManually(orderCode);
-        return ResponseEntity.ok(Map.of("message", "done"));
+        return ResponseEntity.ok().build();
     }
 
     // Giữ nguyên path cũ vì đây là URL đã cấu hình trên PayOS dashboard
@@ -69,10 +68,10 @@ public class PaymentControllerREST {
     public ResponseEntity<?> handleWebhook(@RequestBody String rawBody) {
         try {
             paymentService.processWebhook(rawBody);
-            return ResponseEntity.ok(Map.of("success", true));
+            return ResponseEntity.ok().build();
         } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.status(400).body(Map.of("message", "Webhook verify failed"));
+            return ResponseEntity.status(400).build();
         }
     }
 }
