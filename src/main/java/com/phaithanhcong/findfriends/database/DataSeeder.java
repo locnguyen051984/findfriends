@@ -1,14 +1,14 @@
 package com.phaithanhcong.findfriends.database;
 
-import com.phaithanhcong.findfriends.model.Admin;
 import com.phaithanhcong.findfriends.model.User;
 import com.phaithanhcong.findfriends.model.Message;
 import com.phaithanhcong.findfriends.model.PaymentStatus;
-import com.phaithanhcong.findfriends.repository.AdminRepository;
+import com.phaithanhcong.findfriends.repository.CallStatusRepository;
 import com.phaithanhcong.findfriends.repository.LoginLocationRepository;
 import com.phaithanhcong.findfriends.repository.MessageRepository;
 import com.phaithanhcong.findfriends.repository.PaymentStatusRepository;
 import com.phaithanhcong.findfriends.repository.UserRepository;
+import com.phaithanhcong.findfriends.model.CallStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
@@ -22,29 +22,26 @@ import java.util.List;
 public class DataSeeder implements CommandLineRunner {
 
     private final UserRepository userRepository;
-    private final AdminRepository adminRepository;
     private final MessageRepository messageRepository;
     private final LoginLocationRepository locationRepository;
     private final PaymentStatusRepository paymentStatusRepository;
+    private final CallStatusRepository callStatusRepository;
 
     @Override
     public void run(String... args) {
         seedPaymentStatusIfMissing("PENDING");
         seedPaymentStatusIfMissing("PAID");
+        seedCallStatusIfMissing("MISSED");
+        seedCallStatusIfMissing("REJECTED");
+        seedCallStatusIfMissing("COMPLETED");
+        seedCallStatusIfMissing("FAILED");
+
+        
 
         // Clear all existing data in correct dependency order
         locationRepository.deleteAll();
         messageRepository.deleteAll();
         userRepository.deleteAll();
-        adminRepository.deleteAll();
-
-        // 1. Seed Admin
-        Admin admin = Admin.builder()
-                .adminName("admin")
-                .password("1")
-                .email("admin@gmail.com")
-                .build();
-        adminRepository.save(admin);
 
         // 2. Seed Users (test1 to test9)
         List<User> users = new ArrayList<>();
@@ -114,4 +111,9 @@ public class DataSeeder implements CommandLineRunner {
             paymentStatusRepository.save(PaymentStatus.builder().code(code).build());
         }
     }
+    private void seedCallStatusIfMissing(String code) {
+        if (callStatusRepository.findByCode(code).isEmpty()) {
+                callStatusRepository.save(CallStatus.builder().code(code).build());
+        }
+        }
 }

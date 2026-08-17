@@ -1,78 +1,220 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Chat với <span th:text="${otherUser.userName}"></span></title>
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7/bundles/stomp.umd.min.js"></script>
     <style>
-        body {
-            font-family: sans-serif;
-            max-width: 600px;
-            margin: 30px auto;
-        }
+      body {
+        font-family: sans-serif;
+        max-width: 600px;
+        margin: 30px auto;
+      }
 
-        .msg {
-            margin: 8px 0;
-            padding: 8px 12px;
-            border-radius: 8px;
-            max-width: 70%;
-        }
+      .msg {
+        margin: 8px 0;
+        padding: 8px 12px;
+        border-radius: 8px;
+        max-width: 70%;
+      }
 
-        .msg.me {
-            background: #d1f0ff;
-            margin-left: auto;
-            text-align: right;
-        }
+      .msg.me {
+        background: #d1f0ff;
+        margin-left: auto;
+        text-align: right;
+      }
 
-        .msg.other {
-            background: #f0f0f0;
-        }
+      .msg.other {
+        background: #f0f0f0;
+      }
 
-        .msg small {
-            display: block;
-            color: #888;
-            font-size: 11px;
-        }
+      .msg small {
+        display: block;
+        color: #888;
+        font-size: 11px;
+      }
 
-        .error {
-            color: red;
-        }
+      .error {
+        color: red;
+      }
 
-        form {
-            display: flex;
-            gap: 8px;
-            margin-top: 16px;
-        }
+      form {
+        display: flex;
+        gap: 8px;
+        margin-top: 16px;
+      }
 
-        input[type=text] {
-            flex: 1;
-            padding: 8px;
-        }
+      input[type="text"] {
+        flex: 1;
+        padding: 8px;
+      }
     </style>
-</head>
-
-<body>
-    <div style="margin-bottom: 12px;">
-        <a href="/home" style="text-decoration: none; font-weight: bold; color: #555;">⬅️ Quay lại Trang chủ</a>
+  </head>
+  <script th:inline="javascript">
+    var currentUserId = /*[[${currentUser.id}]]*/ null;
+    var otherUserId = /*[[${otherUser.id}]]*/ null;
+    var otherUserName = /*[[${otherUser.userName}]]*/ "";
+  </script>
+  <script src="/js/call.js"></script>
+  <body>
+    <div style="margin-bottom: 12px">
+      <a
+        href="/home"
+        style="text-decoration: none; font-weight: bold; color: #555"
+        >⬅️ Quay lại Trang chủ</a
+      >
     </div>
 
-    <h2>Chat với <span th:text="${otherUser.userName}"></span> (ID: <span th:text="${otherUser.id}"></span>)</h2>
+    <h2>
+      Chat với <span th:text="${otherUser.userName}"></span> (ID:
+      <span th:text="${otherUser.id}"></span>)
+    </h2>
+    <div style="margin-bottom: 12px">
+      <button type="button" onclick="CallManager.startCall('VOICE')">📞 Gọi thoại</button>
+      <button type="button" onclick="CallManager.startCall('VIDEO')">🎥 Gọi video</button>
+    </div>
+
+    <!-- Call Modal -->
+    <div
+      id="callModal"
+      style="
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.6);
+        z-index: 999;
+        justify-content: center;
+        align-items: center;
+      "
+    >
+      <div
+        style="
+          background: #fff;
+          padding: 24px;
+          border-radius: 8px;
+          text-align: center;
+          min-width: 300px;
+        "
+      >
+        <div
+          id="callStatusText"
+          style="font-size: 16px; margin-bottom: 16px"
+        ></div>
+
+        <div id="videoContainer" style="display: none; margin-bottom: 16px">
+          <video
+            id="remoteVideo"
+            autoplay
+            playsinline
+            style="width: 100%; border-radius: 6px; background: #000"
+          ></video>
+          <video
+            id="localVideo"
+            autoplay
+            playsinline
+            muted
+            style="
+              width: 80px;
+              position: absolute;
+              bottom: 80px;
+              right: 24px;
+              border-radius: 6px;
+              border: 2px solid #fff;
+            "
+          ></video>
+        </div>
+
+        <div id="incomingCallButtons" style="display: none">
+          <button
+            type="button"
+            onclick="CallManager.acceptCall()"
+            style="
+              background: green;
+              color: #fff;
+              padding: 8px 16px;
+              margin-right: 8px;
+            "
+          >
+            Chấp nhận
+          </button>
+          <button
+            type="button"
+            onclick="CallManager.rejectCall()"
+            style="background: red; color: #fff; padding: 8px 16px"
+          >
+            Từ chối
+          </button>
+        </div>
+
+        <div id="activeCallButtons" style="display:none;">
+            <button type="button" id="toggleMicBtn" onclick="CallManager.toggleMic()">🎤 Tắt mic</button>
+            <button type="button" id="toggleCamBtn" onclick="CallManager.toggleCam()" style="display:none;">📷 Tắt cam</button>
+            <button type="button" onclick="CallManager.endCall()" style="background:red; color:#fff; padding:8px 16px;">Kết thúc</button>
+        </div>
+      </div>
+    </div>
 
     <div th:if="${error}" class="error" th:text="${error}"></div>
 
     <div id="chat-box">
-        <div th:each="msg : ${conversation}" th:class="${msg.senderId == currentUser.id} ? 'msg me' : 'msg other'">
-            <span th:text="${msg.content}"></span>
-            <small th:text="${#temporals.format(msg.sentAt, 'HH:mm dd/MM/yyyy')}"></small>
+      <div th:each="item : ${timeline}">
+        <!-- Tin nhắn thường -->
+        <div
+          th:if="${item.type == 'MESSAGE'}"
+          th:class="${item.isMe} ? 'msg me' : 'msg other'"
+        >
+          <span th:text="${item.content}"></span>
+          <small
+            th:text="${#temporals.format(item.time, 'HH:mm dd/MM/yyyy')}"
+          ></small>
         </div>
+
+        <!-- Cuộc gọi -->
+        <div
+          th:if="${item.type == 'CALL'}"
+          th:class="${item.isMe} ? 'msg me' : 'msg other'"
+          style="display: flex; align-items: center; gap: 8px"
+        >
+          <span
+            th:text="${item.callType == 'VIDEO' ? '🎥' : '📞'}"
+            style="font-size: 18px"
+          ></span>
+          <span>
+            <span
+              th:if="${item.statusCode == 'COMPLETED'}"
+              th:text="${item.isMe ? 'Bạn đã gọi' : 'Cuộc gọi đến'} + ' - ' + ${item.durationText}"
+            ></span>
+            <span th:if="${item.statusCode == 'MISSED'}">Cuộc gọi nhỡ</span>
+            <span
+              th:if="${item.statusCode == 'REJECTED'}"
+              th:text="${item.isMe ? 'Cuộc gọi bị từ chối' : 'Bạn đã từ chối cuộc gọi'}"
+            ></span>
+            <span th:if="${item.statusCode == 'FAILED'}"
+              >Cuộc gọi thất bại</span
+            >
+            <small
+              th:text="${#temporals.format(item.time, 'HH:mm dd/MM/yyyy')}"
+              style="display: block"
+            ></small>
+          </span>
+        </div>
+      </div>
     </div>
 
     <form th:action="@{/messages/{id}(id=${otherUser.id})}" method="post">
-        <input type="text" name="content" placeholder="Nhập tin nhắn..." required autofocus />
-        <button type="submit">Gửi</button>
+      <input
+        type="text"
+        name="content"
+        placeholder="Nhập tin nhắn..."
+        required
+        autofocus
+      />
+      <button type="submit">Gửi</button>
     </form>
-
-</body>
-
+  </body>
 </html>
