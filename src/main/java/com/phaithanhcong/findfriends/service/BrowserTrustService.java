@@ -14,56 +14,58 @@ import java.util.Optional;
 @Service
 public class BrowserTrustService {
 
-    private final BrowserTrustRepository browserTrustRepository;
+    public enum BrowserTrustStatus {
+        TRUSTED,
+        PENDING,
+        DENIED
+    }
 
-    public static final String TRUSTED = "TRUSTED";
-    public static final String PENDING = "PENDING";
-    public static final String DENIED = "DENIED";
+    private final BrowserTrustRepository browserTrustRepository;
 
     public boolean checkOrRegisterBrowser(User user, String browserToken) {
         Optional<BrowserTrust> existing = browserTrustRepository.findByUserAndBrowserToken(user, browserToken);
 
-        if (existing.isPresent() && TRUSTED.equals(existing.get().getStatus())) {
+        if (existing.isPresent() && BrowserTrustStatus.TRUSTED.equals(existing.get().getStatus())) {
             return true;
         }
 
-        boolean hasAnyTrusted = browserTrustRepository.existsByUserAndStatus(user, TRUSTED);
+        boolean hasAnyTrusted = browserTrustRepository.existsByUserAndStatus(user, BrowserTrustStatus.TRUSTED);
 
         BrowserTrust record = existing.orElse(
                 BrowserTrust.builder().user(user).browserToken(browserToken).build());
         record.setCreatedAt(LocalDateTime.now());
 
         if (!hasAnyTrusted) {
-            record.setStatus(TRUSTED);
+            record.setStatus(BrowserTrustStatus.TRUSTED);
             browserTrustRepository.save(record);
             return true;
         }
 
-        record.setStatus(PENDING);
+        record.setStatus(BrowserTrustStatus.PENDING);
         browserTrustRepository.save(record);
         return false;
     }
 
-    public String getStatus(User user, String browserToken) {
+    public BrowserTrustStatus getStatus(User user, String browserToken) {
         return browserTrustRepository.findByUserAndBrowserToken(user, browserToken)
                 .map(BrowserTrust::getStatus)
-                .orElse(PENDING);
+                .orElse(BrowserTrustStatus.PENDING);
     }
 
     public List<BrowserTrust> getPendingRequests(User user) {
-        return browserTrustRepository.findByUserAndStatus(user, PENDING);
+        return browserTrustRepository.findByUserAndStatus(user, BrowserTrustStatus.PENDING);
     }
 
     public void approve(Long requestId) {
         browserTrustRepository.findById(requestId).ifPresent(bt -> {
-            bt.setStatus(TRUSTED);
+            bt.setStatus(BrowserTrustStatus.TRUSTED);
             browserTrustRepository.save(bt);
         });
     }
 
     public void deny(Long requestId) {
         browserTrustRepository.findById(requestId).ifPresent(bt -> {
-            bt.setStatus(DENIED);
+            bt.setStatus(BrowserTrustStatus.DENIED);
             browserTrustRepository.save(bt);
         });
     }

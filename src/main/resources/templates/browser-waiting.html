@@ -6,14 +6,15 @@
     <title>Find Friends - Chờ xác nhận</title>
 </head>
 <body>
-    <h2>Trình duyệt lạ</h2>
-    <p>Bạn đang đăng nhập từ 1 trình duyệt mới. Hãy mở tài khoản này trên trình duyệt quen thuộc để xác nhận.</p>
-    <p id="statusText"><b>Đang chờ xác nhận...</b></p>
+    <h2 data-i18n="waitingTitle">Trình duyệt lạ</h2>
+    <p data-i18n="waitingDesc">Bạn đang đăng nhập từ 1 trình duyệt mới. Hãy mở tài khoản này trên trình duyệt quen thuộc để xác nhận.</p>
+    <p id="statusText"><b data-i18n="waitingStatus">Đang chờ xác nhận...</b></p>
 
     <input type="hidden" id="waitBrowserToken" th:value="${browserToken}">
 
-    <a href="/logout">Đăng xuất</a>
+    <a href="/logout" data-i18n="logout">Đăng xuất</a>
 
+    <script src="/js/i18n.js"></script>
     <script src="/js/browser-wait.js"></script>
 </body>
 </html>

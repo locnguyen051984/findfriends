@@ -20,6 +20,7 @@ public class BrowserController {
 
     private final BrowserTrustService browserTrustService;
 
+    // POST: có thể tạo mới hoặc đổi trạng thái 1 bản ghi -> có ghi dữ liệu
     @PostMapping("/check")
     @ResponseBody
     public Map<String, String> check(@RequestParam String browserToken, HttpSession session) {
@@ -36,6 +37,7 @@ public class BrowserController {
         return response;
     }
 
+    // GET: chỉ render 1 trang, không ghi gì vào CSDL
     @GetMapping("/waiting")
     public String waiting(@RequestParam String browserToken, HttpSession session, Model model) {
         if (getCurrentUser(session) == null) {
@@ -45,6 +47,7 @@ public class BrowserController {
         return "browser-waiting";
     }
 
+    // GET: chỉ đọc trạng thái hiện có, không thay đổi gì
     @GetMapping("/status")
     @ResponseBody
     public Map<String, String> status(@RequestParam String browserToken, HttpSession session) {
@@ -56,10 +59,11 @@ public class BrowserController {
             return response;
         }
 
-        response.put("status", browserTrustService.getStatus(currentUser, browserToken));
+        response.put("status", browserTrustService.getStatus(currentUser, browserToken).name());
         return response;
     }
 
+    // GET: chỉ đọc danh sách đang chờ, không thay đổi gì
     @GetMapping("/pending")
     @ResponseBody
     public List<Map<String, Object>> pending(HttpSession session) {
@@ -77,6 +81,7 @@ public class BrowserController {
                 .toList();
     }
 
+    // POST: ghi đè trạng thái 1 bản ghi có sẵn -> có ghi dữ liệu
     @PostMapping("/approve")
     @ResponseBody
     public Map<String, String> approve(@RequestParam Long requestId, HttpSession session) {
@@ -90,6 +95,7 @@ public class BrowserController {
         return response;
     }
 
+    // POST: ghi đè trạng thái 1 bản ghi có sẵn -> có ghi dữ liệu
     @PostMapping("/deny")
     @ResponseBody
     public Map<String, String> deny(@RequestParam Long requestId, HttpSession session) {

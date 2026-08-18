@@ -1,5 +1,6 @@
 package com.phaithanhcong.findfriends.model;
 
+import com.phaithanhcong.findfriends.service.BrowserTrustService.BrowserTrustStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -24,8 +25,9 @@ public class BrowserTrust {
     @Column(name = "browser_token", nullable = false)
     private String browserToken;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
-    private String status;
+    private BrowserTrustStatus status;
 
     @Column(name = "createdAt")
     private LocalDateTime createdAt;
