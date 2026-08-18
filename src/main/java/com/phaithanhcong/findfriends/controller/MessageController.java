@@ -1,6 +1,5 @@
 package com.phaithanhcong.findfriends.controller;
 
-import com.phaithanhcong.findfriends.model.Message;
 import com.phaithanhcong.findfriends.model.User;
 import com.phaithanhcong.findfriends.repository.UserRepository;
 import com.phaithanhcong.findfriends.service.MessageService;
@@ -11,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 
 import jakarta.servlet.http.HttpSession;
 import java.util.List;
+import java.util.Map;
 
 @Controller
 @RequestMapping("/messages")
@@ -28,19 +28,19 @@ public class MessageController {
 
         User currentUser = getCurrentUser(session);
         if (currentUser == null) {
-            return "redirect:/"; // chưa login thì đá về trang login
+            return "redirect:/";
         }
 
         User otherUser = userRepository.findById(otherUserId)
                 .orElseThrow(() -> new RuntimeException("Người dùng không tồn tại"));
 
-        List<Message> conversation = messageService.getConversation(currentUser.getId(), otherUser.getId());
+        List<Map<String, Object>> timeline = messageService.buildTimeline(currentUser, otherUser);
 
-        model.addAttribute("conversation", conversation);
+        model.addAttribute("timeline", timeline);
         model.addAttribute("currentUser", currentUser);
         model.addAttribute("otherUser", otherUser);
 
-        return "message"; // -> templates/message.html
+        return "message";
     }
 
     @PostMapping("/{otherUserId}")
@@ -62,8 +62,8 @@ public class MessageController {
             messageService.sendMessage(currentUser, otherUser, content);
             return "redirect:/messages/" + otherUserId;
         } catch (RuntimeException e) {
-            List<Message> conversation = messageService.getConversation(currentUser.getId(), otherUser.getId());
-            model.addAttribute("conversation", conversation);
+            List<Map<String, Object>> timeline = messageService.buildTimeline(currentUser, otherUser);
+            model.addAttribute("timeline", timeline);
             model.addAttribute("currentUser", currentUser);
             model.addAttribute("otherUser", otherUser);
             model.addAttribute("error", e.getMessage());
@@ -71,7 +71,6 @@ public class MessageController {
         }
     }
 
-    // Lấy trực tiếp từ session, không cần query lại DB
     private User getCurrentUser(HttpSession session) {
         return (User) session.getAttribute("loggedInUser");
     }

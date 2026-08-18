@@ -42,19 +42,13 @@
         <table border="1" cellpadding="6" cellspacing="0">
             <thead>
                 <tr>
-                    <th>Loại</th>
                     <th>Username</th>
                     <th>Password</th>
                 </tr>
             </thead>
             <tbody>
-                <tr>
-                    <td>Admin</td>
-                    <td>admin</td>
-                    <td>1</td>
-                </tr>
+                
                 <tr th:each="i : ${#numbers.sequence(1, 9)}">
-                    <td>User</td>
                     <td th:text="'test' + ${i}"></td>
                     <td>1</td>
                 </tr>
