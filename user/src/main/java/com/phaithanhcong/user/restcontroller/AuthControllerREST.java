@@ -19,10 +19,10 @@ public class AuthControllerREST {
     // ================== LOGIN ==================
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestParam String username,
+    public ResponseEntity<?> userLogin(@RequestParam String username,
                                     @RequestParam String password,
                                     HttpSession session) {
-        User user = authService.login(username, password);
+        User user = authService.userLogin(username, password);
 
         if (user == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
@@ -43,7 +43,7 @@ public class AuthControllerREST {
     // ================== REGISTER ==================
 
     @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestParam String username,
+    public ResponseEntity<?> userRegister(@RequestParam String username,
                                        @RequestParam String password,
                                        @RequestParam String confirmPassword,
                                        @RequestParam String email) {
@@ -51,7 +51,7 @@ public class AuthControllerREST {
             return ResponseEntity.badRequest().build();
         }
 
-        boolean success = authService.register(username, password, email, false);
+        boolean success = authService.userRegister(username, password, email, false);
 
         if (!success) {
             return ResponseEntity.badRequest().build();
@@ -65,7 +65,7 @@ public class AuthControllerREST {
     @PostMapping("/forgot-password")
     public ResponseEntity<?> forgotPassword(@RequestParam String username,
                                              @RequestParam String email) {
-        boolean valid = authService.verifyAccount(username, email);
+        boolean valid = authService.userVerifyAccount(username, email);
 
         if (!valid) {
             return ResponseEntity.badRequest().build();
@@ -77,14 +77,14 @@ public class AuthControllerREST {
     // ================== RESET PASSWORD ==================
 
     @PostMapping("/reset-password")
-    public ResponseEntity<?> resetPassword(@RequestParam String username,
+    public ResponseEntity<?> userResetPassword(@RequestParam String username,
                                             @RequestParam String newPassword,
                                             @RequestParam String confirmNewPassword) {
         if (!newPassword.equals(confirmNewPassword)) {
             return ResponseEntity.badRequest().build();
         }
 
-        boolean success = authService.resetPassword(username, newPassword);
+        boolean success = authService.userResetPassword(username, newPassword);
 
         if (!success) {
             return ResponseEntity.internalServerError().build();

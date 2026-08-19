@@ -32,13 +32,13 @@ public class MessageControllerREST {
         User otherUser = userRepository.findById(otherUserId)
                 .orElseThrow(() -> new RuntimeException("Người dùng không tồn tại"));
 
-        List<Message> conversation = messageService.getConversation(currentUser.getId(), otherUser.getId());
+        List<Message> conversation = messageService.userGetConversation(currentUser.getId(), otherUser.getId());
 
         return ResponseEntity.ok(new ConversationResponse(conversation, UserResponse.fromEntity(currentUser), UserResponse.fromEntity(otherUser)));
     }
 
     @PostMapping("/{otherUserId}")
-    public ResponseEntity<?> sendMessage(@PathVariable Long otherUserId,
+    public ResponseEntity<?> userSendMessage(@PathVariable Long otherUserId,
                                           @RequestParam String content,
                                           HttpSession session) {
         User currentUser = getCurrentUser(session);
@@ -53,11 +53,11 @@ public class MessageControllerREST {
         UserResponse otherUserDto = UserResponse.fromEntity(otherUser);
 
         try {
-            messageService.sendMessage(currentUser, otherUser, content);
-            List<Message> conversation = messageService.getConversation(currentUser.getId(), otherUser.getId());
+            messageService.userSendMessage(currentUser, otherUser, content);
+            List<Message> conversation = messageService.userGetConversation(currentUser.getId(), otherUser.getId());
             return ResponseEntity.ok(new ConversationResponse(conversation, currentUserDto, otherUserDto));
         } catch (RuntimeException e) {
-            List<Message> conversation = messageService.getConversation(currentUser.getId(), otherUser.getId());
+            List<Message> conversation = messageService.userGetConversation(currentUser.getId(), otherUser.getId());
             return ResponseEntity.badRequest().body(
                     new ConversationResponse(conversation, currentUserDto, otherUserDto, e.getMessage())
             );

@@ -17,14 +17,14 @@ public class PaymentControllerREST {
     private final PaymentService paymentService;
 
     @PostMapping("/create")
-    public ResponseEntity<?> createPayment(HttpSession session) {
+    public ResponseEntity<?> userCreatePayment(HttpSession session) {
         User user = (User) session.getAttribute("loggedInUser");
         if (user == null) {
             return ResponseEntity.status(401).build();
         }
 
         try {
-            CreatePaymentLinkResponse response = paymentService.createPayment(user);
+            CreatePaymentLinkResponse response = paymentService.userCreatePayment(user);
             session.setAttribute("currentOrderCode", response.getOrderCode());
             return ResponseEntity.ok(response);
         } catch (Exception e) {
@@ -41,10 +41,10 @@ public class PaymentControllerREST {
         }
 
         try {
-            String status = paymentService.getStatus(orderCode);
+            String status = paymentService.userGetStatus(orderCode);
 
             if ("PAID".equals(status)) {
-                User user = paymentService.getUserIfPaid(orderCode);
+                User user = paymentService.userGetUserIfPaid(orderCode);
                 if (user != null) {
                     session.setAttribute("loggedInUser", user);
                 }
@@ -59,7 +59,7 @@ public class PaymentControllerREST {
 
     @GetMapping("/test-mark-paid")
     public ResponseEntity<?> testMarkPaid(@RequestParam Long orderCode) {
-        paymentService.markAsPaidManually(orderCode);
+        paymentService.userMarkAsPaidManually(orderCode);
         return ResponseEntity.ok().build();
     }
 
@@ -67,7 +67,7 @@ public class PaymentControllerREST {
     @PostMapping("/payment/payos-webhook")
     public ResponseEntity<?> handleWebhook(@RequestBody String rawBody) {
         try {
-            paymentService.processWebhook(rawBody);
+            paymentService.userProcessWebhook(rawBody);
             return ResponseEntity.ok().build();
         } catch (Exception e) {
             e.printStackTrace();

@@ -32,7 +32,7 @@ public class LocationControllerREST {
         }
 
         Map<String, String> response = new HashMap<>();
-        locationService.recordLoginAndCheckAnomaly(currentUser, latitude, longitude)
+        locationService.userRecordLoginAndCheckAnomaly(currentUser, latitude, longitude)
                 .ifPresent(warning -> response.put("warning", warning));
 
         return ResponseEntity.ok(response);
@@ -49,7 +49,7 @@ public class LocationControllerREST {
                 .filter(u -> !u.getId().equals(currentUser.getId()))
                 .toList();
 
-        return ResponseEntity.ok(locationService.getNearbyList(currentUser, otherUsers));
+        return ResponseEntity.ok(locationService.userGetNearbyList(currentUser, otherUsers));
     }
 
     private User getCurrentUser(HttpSession session) {

@@ -38,7 +38,7 @@ public class LocationController {
             return response;
         }
 
-        locationService.recordLoginAndCheckAnomaly(currentUser, latitude, longitude)
+        locationService.userRecordLoginAndCheckAnomaly(currentUser, latitude, longitude)
                 .ifPresent(warning -> response.put("warning", warning));
 
         return response;
@@ -56,7 +56,7 @@ public class LocationController {
                 .filter(u -> !u.getId().equals(currentUser.getId()))
                 .toList();
 
-        return locationService.getNearbyList(currentUser, otherUsers);
+        return locationService.userGetNearbyList(currentUser, otherUsers);
     }
 
     private User getCurrentUser(HttpSession session) {

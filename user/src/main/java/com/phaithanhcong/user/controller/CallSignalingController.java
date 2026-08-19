@@ -14,6 +14,6 @@ public class CallSignalingController {
 
     @MessageMapping("/call.signal")
     public void handleSignal(Map<String, Object> message) {
-        callService.processSignal(message);
+        callService.userProcessSignal(message);
     }
 }

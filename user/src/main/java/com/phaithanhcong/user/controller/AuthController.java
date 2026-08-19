@@ -18,7 +18,7 @@ public class AuthController {
     // ================== LOGIN ==================
 
     @GetMapping("/")
-    public String login() {
+    public String userLogin() {
         // Trả về file index.html (trang đăng nhập)
         return "index";
     }
@@ -28,7 +28,7 @@ public class AuthController {
                              @RequestParam String password,
                              HttpSession session,
                              Model model) {
-       User user = authService.login(username, password);
+       User user = authService.userLogin(username, password);
 
        if (user != null) {
            session.setAttribute("loggedInUser", user);
@@ -54,7 +54,7 @@ public class AuthController {
     // ================== REGISTER ==================
 
     @GetMapping("/register")
-    public String register() {
+    public String userRegister() {
         return "register";
     }
 
@@ -72,7 +72,7 @@ public class AuthController {
             return "register";
         }
 
-        boolean success = authService.register(username, password, email, false);
+        boolean success = authService.userRegister(username, password, email, false);
 
         if (success) {
             model.addAttribute("successMessage", "Đăng ký thành công! Đang chuyển sang trang đăng nhập...");
@@ -96,7 +96,7 @@ public class AuthController {
     public String handleForgotPassword(@RequestParam String username,
                                        @RequestParam String email,
                                        Model model) {
-        boolean valid = authService.verifyAccount(username, email);
+        boolean valid = authService.userVerifyAccount(username, email);
 
         if (valid) {
             return "redirect:/reset-password?username=" + username;
@@ -127,7 +127,7 @@ public class AuthController {
             return "reset-password";
         }
 
-        boolean success = authService.resetPassword(username, newPassword);
+        boolean success = authService.userResetPassword(username, newPassword);
 
         if (success) {
             model.addAttribute("successMessage", "Đổi mật khẩu thành công! Đang chuyển sang trang đăng nhập...");
