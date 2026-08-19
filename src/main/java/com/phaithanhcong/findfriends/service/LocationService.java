@@ -62,6 +62,11 @@ public class LocationService {
                         .loginAt(LocalDateTime.now())
                         .build());
 
+        List<LoginLocation> updatedLogins = loginLocationRepository.findByUserOrderByLoginAtDesc(user);
+        if (updatedLogins.size() > HISTORY_SIZE) {
+            loginLocationRepository.deleteAll(updatedLogins.subList(HISTORY_SIZE, updatedLogins.size()));
+        }
+
         return warning;
     }
 
