@@ -1,4 +1,4 @@
-package com.phaithanhcong.user.controller;
+package com.phaithanhcong.user.restcontroller;
 
 import com.phaithanhcong.user.dto.ConversationResponse;
 import com.phaithanhcong.user.dto.UserResponse;
