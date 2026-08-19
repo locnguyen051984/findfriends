@@ -1,8 +1,6 @@
 package com.phaithanhcong.admin.controller;
 
-import com.phaithanhcong.admin.repository.UserRepository;
-import com.phaithanhcong.admin.repository.PaymentOrderRepository;
-import com.phaithanhcong.admin.repository.CallLogRepository;
+import com.phaithanhcong.admin.service.AdminDashboardService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -14,20 +12,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 public class AdminDashboardController {
 
     @Autowired
-    private UserRepository userRepository;
-    
-    @Autowired
-    private PaymentOrderRepository paymentOrderRepository;
-    
-    @Autowired
-    private CallLogRepository callLogRepository;
+    private AdminDashboardService adminDashboardService;
 
     @GetMapping({"", "/"})
     public String dashboard(Model model) {
-        long totalUsers = userRepository.count();
-        long premiumUsers = userRepository.countByPremiumTrue();
-        long totalPayments = paymentOrderRepository.count();
-        long totalCalls = callLogRepository.count();
+        long totalUsers = adminDashboardService.adminGetTotalUsers();
+        long premiumUsers = adminDashboardService.adminGetPremiumUsers();
+        long totalPayments = adminDashboardService.adminGetTotalPayments();
+        long totalCalls = adminDashboardService.adminGetTotalCalls();
         
         model.addAttribute("totalUsers", totalUsers);
         model.addAttribute("premiumUsers", premiumUsers);

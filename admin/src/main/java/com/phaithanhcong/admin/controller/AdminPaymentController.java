@@ -1,7 +1,7 @@
 package com.phaithanhcong.admin.controller;
 
 import com.phaithanhcong.admin.model.PaymentOrder;
-import com.phaithanhcong.admin.repository.PaymentOrderRepository;
+import com.phaithanhcong.admin.service.AdminPaymentService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -15,11 +15,11 @@ import java.util.List;
 public class AdminPaymentController {
 
     @Autowired
-    private PaymentOrderRepository paymentOrderRepository;
+    private AdminPaymentService adminPaymentService;
 
     @GetMapping
     public String listPayments(Model model) {
-        List<PaymentOrder> payments = paymentOrderRepository.findAll();
+        List<PaymentOrder> payments = adminPaymentService.adminGetAllPayments();
         model.addAttribute("payments", payments);
         return "payments";
     }

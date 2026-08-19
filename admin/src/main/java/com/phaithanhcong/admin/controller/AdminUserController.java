@@ -1,7 +1,7 @@
 package com.phaithanhcong.admin.controller;
 
 import com.phaithanhcong.admin.model.User;
-import com.phaithanhcong.admin.repository.UserRepository;
+import com.phaithanhcong.admin.service.AdminUserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -11,30 +11,24 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.List;
-import java.util.Optional;
 
 @Controller
 @RequestMapping("/admin/users")
 public class AdminUserController {
 
     @Autowired
-    private UserRepository userRepository;
+    private AdminUserService adminUserService;
 
     @GetMapping
     public String listUsers(Model model) {
-        List<User> users = userRepository.findAll();
+        List<User> users = adminUserService.adminGetAllUsers();
         model.addAttribute("users", users);
         return "users";
     }
 
     @PostMapping("/toggle-premium")
     public String togglePremium(@RequestParam Long userId) {
-        Optional<User> userOpt = userRepository.findById(userId);
-        if (userOpt.isPresent()) {
-            User user = userOpt.get();
-            user.setPremium(!user.isPremium());
-            userRepository.save(user);
-        }
+        adminUserService.adminTogglePremium(userId);
         return "redirect:/admin/users";
     }
 }
