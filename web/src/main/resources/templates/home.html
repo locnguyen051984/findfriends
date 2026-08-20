@@ -9,7 +9,7 @@
     <div>
         <span data-i18n="greeting">Xin chào</span>, <b th:text="${username}"></b>! |
         <a href="/logout" data-i18n="logout">Đăng xuất</a> |
-        <button type="button" id="getLocationBtn" data-i18n="getLocationBtn" onclick="checkAndRequestLocation()">Lấy vị trí của tôi</button>
+        <button type="button" id="getLocationBtn" data-i18n="getLocationBtn" onclick="checkAndRequestLocation()">📍 Lấy vị trí của tôi</button>
         <select id="langSwitcher" onchange="applyLanguage(this.value)">
             <option value="vi">Tiếng Việt</option>
             <option value="en">English</option>
@@ -29,16 +29,15 @@
     <!-- Modal cho Webcam -->
     <div id="faceModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:1000; align-items:center; justify-content:center;">
         <div style="background:white; padding:20px; border-radius:8px; text-align:center; max-width:500px; width:90%; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-            <h3 style="margin-top: 0; margin-bottom: 15px;">Xác minh khuôn mặt</h3>
+            <h3 style="margin-top: 0; margin-bottom: 15px;" data-i18n="verifyFaceTitle">Xác minh khuôn mặt</h3>
             <video id="videoElement" autoplay playsinline style="width:100%; border:1px solid #ddd; border-radius:4px; margin-bottom:15px; background: #000;"></video>
             <div style="display: flex; justify-content: space-between;">
-                <button id="btnCloseModal" style="padding: 8px 16px; background-color: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">Đóng</button>
-                <button id="btnStartVerify" style="padding: 8px 16px; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;">Xác minh ngay</button>
+                <button id="btnCloseModal" data-i18n="closeBtn" style="padding: 8px 16px; background-color: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">Đóng</button>
+                <button id="btnStartVerify" data-i18n="startVerifyBtn" style="padding: 8px 16px; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;">Xác minh ngay</button>
             </div>
             <div id="verifyMessage" style="margin-top: 10px; font-weight: bold;"></div>
         </div>
     </div>
-
 
     <div id="locationWarningBox"
          style="display:none; background:#fff3cd; color:#856404; padding:12px; border-radius:6px; margin-bottom:16px; margin-top:12px; max-width:600px;"></div>
@@ -75,7 +74,8 @@
     </table>
 
     <script src="/js/i18n.js"></script>
-    <script src="/js/home.js"></script>
+    <script src="/js/location.js"></script>
     <script src="/js/browser-trust.js"></script>
+    <script src="/js/home.js"></script>
 </body>
 </html>
