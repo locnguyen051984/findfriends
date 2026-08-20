@@ -2,7 +2,7 @@ package com.phaithanhcong.database;
 
 import com.phaithanhcong.model.User;
 import com.phaithanhcong.model.Message;
-import com.phaithanhcong.model.PaymentStatus;
+import com.phaithanhcong.repository.BrowserTrustRepository;
 import com.phaithanhcong.repository.CallStatusRepository;
 import com.phaithanhcong.repository.LoginLocationRepository;
 import com.phaithanhcong.repository.MessageRepository;
@@ -26,6 +26,7 @@ public class DataSeeder implements CommandLineRunner {
     private final LoginLocationRepository locationRepository;
     private final PaymentStatusRepository paymentStatusRepository;
     private final CallStatusRepository callStatusRepository;
+    private final BrowserTrustRepository browserTrustRepository;
 
     @Override
     public void run(String... args) {
@@ -36,9 +37,8 @@ public class DataSeeder implements CommandLineRunner {
         seedCallStatusIfMissing("COMPLETED");
         seedCallStatusIfMissing("FAILED");
 
-        
-
         // Clear all existing data in correct dependency order
+        browserTrustRepository.deleteAll();
         locationRepository.deleteAll();
         messageRepository.deleteAll();
         userRepository.deleteAll();
