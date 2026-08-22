@@ -92,10 +92,10 @@ public class LocationServiceImpl implements LocationService {
                 if (km <= NEARBY_RADIUS_KM) {
                     entry.put("distance", String.format("%.1f km", km));
                 } else {
-                    entry.put("distance", "Ngoài phạm vi " + (int) NEARBY_RADIUS_KM + "km");
+                    entry.put("distance", "OUT_OF_RANGE");
                 }
             } else {
-                entry.put("distance", "Chưa có vị trí");
+                entry.put("distance", "NO_LOCATION");
             }
 
             result.add(entry);

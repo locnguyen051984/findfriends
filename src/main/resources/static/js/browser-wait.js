@@ -6,14 +6,16 @@ document.addEventListener('DOMContentLoaded', function () {
             .then(function (response) { return response.json(); })
             .then(function (data) {
                 var statusText = document.getElementById('statusText');
+                var lang = localStorage.getItem('lang') || 'vi';
+                var t = (translations[lang] && translations[lang]) ? translations[lang] : translations['vi'];
 
                 if (data.status === 'TRUSTED') {
                     clearInterval(checkInterval);
-                    statusText.innerHTML = '<b>Đã được chấp nhận! Đang chuyển hướng...</b>';
+                    statusText.innerHTML = '<b>' + t.trustedMsg + '</b>';
                     setTimeout(function () { window.location.href = '/home'; }, 1500);
                 } else if (data.status === 'DENIED') {
                     clearInterval(checkInterval);
-                    statusText.innerHTML = '<b style="color:red;">Yêu cầu đã bị từ chối.</b>';
+                    statusText.innerHTML = '<b style="color:red;">' + t.deniedMsg + '</b>';
                 }
             })
             .catch(function (error) {
