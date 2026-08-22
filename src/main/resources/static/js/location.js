@@ -1,6 +1,3 @@
-document.addEventListener('DOMContentLoaded', function () {
-    loadNearbyDistances();
-});
 
 function getLang() {
     return localStorage.getItem('lang') || 'vi';
@@ -77,7 +74,7 @@ function resetButton() {
     var btn = document.getElementById('getLocationBtn');
     if (btn) {
         btn.disabled = false;
-        btn.textContent = '📍 ' + t('getLocationBtn');
+        btn.textContent = t('getLocationBtn');
     }
 }
 
@@ -100,17 +97,20 @@ function loadNearbyDistances() {
     fetch('/location/distances')
         .then(function (response) { return response.json(); })
         .then(function (data) {
+            var nearbyMap = {};
             data.forEach(function (item) {
-                var cell = document.querySelector('.location-cell[data-user-id="' + item.id + '"]');
-                if (cell) {
-                    // Dịch mã code từ backend sang ngôn ngữ hiện tại
-                    if (item.distance === 'NO_LOCATION') {
-                        cell.textContent = t('noLocation');
-                    } else if (item.distance === 'OUT_OF_RANGE') {
-                        cell.textContent = t('outOfRange');
-                    } else {
-                        cell.textContent = item.distance;
-                    }
+                nearbyMap[String(item.id)] = item.distance;
+            });
+
+            document.querySelectorAll('.location-cell').forEach(function (cell) {
+                var row = cell.closest('tr');
+                var userId = cell.getAttribute('data-user-id');
+
+                if (nearbyMap[userId] !== undefined) {
+                    cell.textContent = nearbyMap[userId];
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
                 }
             });
         })

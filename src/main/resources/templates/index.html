@@ -3,36 +3,46 @@
 
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/css/style.css">
     <title>Find Friends - Login</title>
 </head>
 
 <body>
 
-<div style="display: flex; gap: 40px;">
+<div style="position: absolute; top: 20px; right: 20px;">
+    <select id="langSwitcher" onchange="applyLanguage(this.value)">
+        <option value="vi">Tiếng Việt</option>
+        <option value="en">English</option>
+        <option value="zh">中文</option>
+    </select>
+</div>
+
+<div class="login-wrap" style="padding-top: 40px;">
 
     <div>
-        <h1>Welcome to FindFriends</h1>
+        <h1 data-i18n="loginTitle">Welcome to FindFriends</h1>
 
         <!-- Hiển thị thông báo lỗi màu đỏ nếu có errorMessage trong Model -->
         <p th:if="${errorMessage}" th:text="${errorMessage}" style="color: red; font-weight: bold;"></p>
 
         <form th:action="@{/login}" method="post">
             <div>
-                <label for="username">Username:</label>
+                <label for="username" data-i18n="usernameLabel" style="display: inline-block; width: 110px;">Username:</label>
                 <!-- Giữ lại username vừa nhập qua th:value -->
                 <input type="text" id="username" name="username" th:value="${username}" required>
             </div>
             <br>
             <div>
-                <label for="password">Password:</label>
+                <label for="password" data-i18n="passwordLabel" style="display: inline-block; width: 110px;">Password:</label>
                 <!-- Mật khẩu phải nhập lại từ đầu khi lỗi -->
                 <input type="password" id="password" name="password" required>
             </div>
             <br>
-            <button type="submit">Login</button>
-            <a href="/register">Chưa có tài khoản?</a>
+            <button type="submit" data-i18n="loginBtn">Login</button>
+            <a href="/register" data-i18n="noAccount">Chưa có tài khoản?</a>
             <br>
-            <a href="/forgot-password">Quên mật khẩu?</a>
+            <a href="/forgot-password" data-i18n="forgotPassword">Quên mật khẩu?</a>
         </form>
     </div>
 
@@ -59,6 +69,7 @@
 
 </div>
 
+<script src="/js/i18n.js"></script>
 </body>
 
 </html>

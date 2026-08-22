@@ -32,7 +32,6 @@ public class BrowserTrustServiceImpl implements BrowserTrustService {
         if (existing.isPresent()) {
             record = existing.get();
         } else {
-            // Chỉ ghi createdAt khi tạo record mới, không ghi đè khi update
             record = BrowserTrust.builder().user(user).browserToken(browserToken).build();
             record.setCreatedAt(LocalDateTime.now());
         }
@@ -60,7 +59,6 @@ public class BrowserTrustServiceImpl implements BrowserTrustService {
 
     public void userApprove(User currentUser, Long requestId) {
         browserTrustRepository.findById(requestId).ifPresent(bt -> {
-            // IDOR fix: chỉ cho phép approve nếu request thuộc về user đang đăng nhập
             if (!bt.getUser().getId().equals(currentUser.getId())) return;
             bt.setStatus(BrowserTrustStatus.TRUSTED);
             browserTrustRepository.save(bt);
@@ -69,7 +67,6 @@ public class BrowserTrustServiceImpl implements BrowserTrustService {
 
     public void userDeny(User currentUser, Long requestId) {
         browserTrustRepository.findById(requestId).ifPresent(bt -> {
-            // IDOR fix: chỉ cho phép deny nếu request thuộc về user đang đăng nhập
             if (!bt.getUser().getId().equals(currentUser.getId())) return;
             bt.setStatus(BrowserTrustStatus.DENIED);
             browserTrustRepository.save(bt);

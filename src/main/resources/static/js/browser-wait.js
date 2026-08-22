@@ -16,6 +16,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 } else if (data.status === 'DENIED') {
                     clearInterval(checkInterval);
                     statusText.innerHTML = '<b style="color:red;">' + t.deniedMsg + '</b>';
+                    setTimeout(function () {
+                        window.location.href = '/logout?denied=true';
+                    }, 2000);
                 }
             })
             .catch(function (error) {
