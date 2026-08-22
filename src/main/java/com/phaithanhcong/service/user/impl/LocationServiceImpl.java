@@ -77,28 +77,27 @@ public class LocationServiceImpl implements LocationService {
         List<Map<String, Object>> result = new ArrayList<>();
         Optional<LoginLocation> currentLoc = loginLocationRepository.findFirstByUserOrderByLoginAtDesc(currentUser);
 
+        if (currentLoc.isEmpty()) {
+            return result; 
+        }
+
         for (User other : otherUsers) {
             Optional<LoginLocation> otherLoc = loginLocationRepository.findFirstByUserOrderByLoginAtDesc(other);
-
-            Map<String, Object> entry = new LinkedHashMap<>();
-            entry.put("id", other.getId());
-            entry.put("username", other.getUserName());
-
-            if (currentLoc.isPresent() && otherLoc.isPresent()) {
-                double km = userHaversine(
-                        currentLoc.get().getLatitude(), currentLoc.get().getLongitude(),
-                        otherLoc.get().getLatitude(), otherLoc.get().getLongitude());
-
-                if (km <= NEARBY_RADIUS_KM) {
-                    entry.put("distance", String.format("%.1f km", km));
-                } else {
-                    entry.put("distance", "OUT_OF_RANGE");
-                }
-            } else {
-                entry.put("distance", "NO_LOCATION");
+            if (otherLoc.isEmpty()) {
+                continue; 
             }
 
-            result.add(entry);
+            double km = userHaversine(
+                    currentLoc.get().getLatitude(), currentLoc.get().getLongitude(),
+                    otherLoc.get().getLatitude(), otherLoc.get().getLongitude());
+
+            if (km <= NEARBY_RADIUS_KM) {
+                Map<String, Object> entry = new LinkedHashMap<>();
+                entry.put("id", other.getId());
+                entry.put("username", other.getUserName());
+                entry.put("distance", String.format("%.1f km", km));
+                result.add(entry);
+            }
         }
         return result;
     }

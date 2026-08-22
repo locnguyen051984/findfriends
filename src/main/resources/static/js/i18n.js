@@ -23,10 +23,18 @@ var translations = {
         denyBtn: "Từ chối",
         gettingLocation: "Đang lấy vị trí...",
         trustedMsg: "Đã được chấp nhận! Đang chuyển hướng...",
-        deniedMsg: "Yêu cầu đã bị từ chối.",
+        deniedMsg: "Yêu cầu đã bị từ chối. Đang đăng xuất...",
         locationDenied: "Bạn đã chặn quyền truy cập vị trí. Vui lòng bật lại trong cài đặt trình duyệt (biểu tượng khoá cạnh URL) để dùng tính năng này.",
         locationError: "Trình duyệt của bạn không hỗ trợ định vị vị trí.",
-        outOfRange: "Ngoài phạm vi 20km"
+        outOfRange: "Ngoài phạm vi 20km",
+        loginTitle: "Chào mừng đến FindFriends",
+        usernameLabel: "Tên đăng nhập:",
+        passwordLabel: "Mật khẩu:",
+        loginBtn: "Đăng nhập",
+        noAccount: "Chưa có tài khoản?",
+        forgotPassword: "Quên mật khẩu?",
+        testAccounts: "Tài khoản test",
+        testAccountsNote: "test2, test4, test6, test8 = sẵn Premium"
     },
     en: {
         greeting: "Hello",
@@ -52,10 +60,18 @@ var translations = {
         denyBtn: "Reject",
         gettingLocation: "Getting location...",
         trustedMsg: "Approved! Redirecting...",
-        deniedMsg: "Request was denied.",
+        deniedMsg: "Request was denied. Logging out...",
         locationDenied: "Location access is blocked. Please enable it in browser settings (lock icon near the URL) to use this feature.",
         locationError: "Your browser does not support geolocation.",
-        outOfRange: "Out of 20km range"
+        outOfRange: "Out of 20km range",
+        loginTitle: "Welcome to FindFriends",
+        usernameLabel: "Username:",
+        passwordLabel: "Password:",
+        loginBtn: "Login",
+        noAccount: "No account?",
+        forgotPassword: "Forgot password?",
+        testAccounts: "Test accounts",
+        testAccountsNote: "test2, test4, test6, test8 = Premium ready"
     },
     zh: {
         greeting: "你好",
@@ -81,10 +97,18 @@ var translations = {
         denyBtn: "拒绝",
         gettingLocation: "正在获取位置...",
         trustedMsg: "已审批！正在跳转...",
-        deniedMsg: "请求已被拒绝。",
+        deniedMsg: "请求已被拒绝。正在登出...",
         locationDenied: "您已拒绝位置访问。请在浏览器设置（URL旁的锁图标）中重新启用。",
         locationError: "您的浏览器不支持地理定位。",
-        outOfRange: "超出20公里范围"
+        outOfRange: "超出20公里范围",
+        loginTitle: "欢迎来到 FindFriends",
+        usernameLabel: "用户名:",
+        passwordLabel: "密码:",
+        loginBtn: "登录",
+        noAccount: "没有账户？",
+        forgotPassword: "忘记密码？",
+        testAccounts: "测试账户",
+        testAccountsNote: "test2, test4, test6, test8 = 已开通高级版"
     }
 };
 
