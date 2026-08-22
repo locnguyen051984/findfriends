@@ -19,7 +19,7 @@ public interface BrowserTrustService {
 
     List<BrowserTrust> userGetPendingRequests(User user);
 
-    void userApprove(Long requestId);
+    void userApprove(User currentUser, Long requestId);
 
-    void userDeny(Long requestId);
+    void userDeny(User currentUser, Long requestId);
 }

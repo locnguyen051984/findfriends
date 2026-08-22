@@ -81,11 +81,12 @@ public class BrowserController {
     @ResponseBody
     public Map<String, String> approve(@RequestParam Long requestId, HttpSession session) {
         Map<String, String> response = new HashMap<>();
-        if (getCurrentUser(session) == null) {
+        User currentUser = getCurrentUser(session);
+        if (currentUser == null) {
             response.put("error", "Chưa đăng nhập");
             return response;
         }
-        browserTrustService.userApprove(requestId);
+        browserTrustService.userApprove(currentUser, requestId);
         response.put("result", "approved");
         return response;
     }
@@ -94,11 +95,12 @@ public class BrowserController {
     @ResponseBody
     public Map<String, String> deny(@RequestParam Long requestId, HttpSession session) {
         Map<String, String> response = new HashMap<>();
-        if (getCurrentUser(session) == null) {
+        User currentUser = getCurrentUser(session);
+        if (currentUser == null) {
             response.put("error", "Chưa đăng nhập");
             return response;
         }
-        browserTrustService.userDeny(requestId);
+        browserTrustService.userDeny(currentUser, requestId);
         response.put("result", "denied");
         return response;
     }

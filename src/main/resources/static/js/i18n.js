@@ -20,7 +20,13 @@ var translations = {
         waitingStatus: "Đang chờ xác nhận...",
         browserWarning: "Có trình duyệt lạ đang cố đăng nhập vào tài khoản của bạn.",
         approveBtn: "Đồng ý",
-        denyBtn: "Từ chối"
+        denyBtn: "Từ chối",
+        gettingLocation: "Đang lấy vị trí...",
+        trustedMsg: "Đã được chấp nhận! Đang chuyển hướng...",
+        deniedMsg: "Yêu cầu đã bị từ chối.",
+        locationDenied: "Bạn đã chặn quyền truy cập vị trí. Vui lòng bật lại trong cài đặt trình duyệt (biểu tượng khoá cạnh URL) để dùng tính năng này.",
+        locationError: "Trình duyệt của bạn không hỗ trợ định vị vị trí.",
+        outOfRange: "Ngoài phạm vi 20km"
     },
     en: {
         greeting: "Hello",
@@ -43,7 +49,13 @@ var translations = {
         waitingStatus: "Waiting for confirmation...",
         browserWarning: "An unrecognized browser is trying to log into your account.",
         approveBtn: "Approve",
-        denyBtn: "Reject"
+        denyBtn: "Reject",
+        gettingLocation: "Getting location...",
+        trustedMsg: "Approved! Redirecting...",
+        deniedMsg: "Request was denied.",
+        locationDenied: "Location access is blocked. Please enable it in browser settings (lock icon near the URL) to use this feature.",
+        locationError: "Your browser does not support geolocation.",
+        outOfRange: "Out of 20km range"
     },
     zh: {
         greeting: "你好",
@@ -66,7 +78,13 @@ var translations = {
         waitingStatus: "等待确认中...",
         browserWarning: "有陌生浏览器正在尝试登录您的账户。",
         approveBtn: "同意",
-        denyBtn: "拒绝"
+        denyBtn: "拒绝",
+        gettingLocation: "正在获取位置...",
+        trustedMsg: "已审批！正在跳转...",
+        deniedMsg: "请求已被拒绝。",
+        locationDenied: "您已拒绝位置访问。请在浏览器设置（URL旁的锁图标）中重新启用。",
+        locationError: "您的浏览器不支持地理定位。",
+        outOfRange: "超出20公里范围"
     }
 };
 

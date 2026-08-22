@@ -2,16 +2,25 @@ document.addEventListener('DOMContentLoaded', function () {
     loadNearbyDistances();
 });
 
+function getLang() {
+    return localStorage.getItem('lang') || 'vi';
+}
+
+function t(key) {
+    var lang = getLang();
+    return (translations[lang] && translations[lang][key]) ? translations[lang][key] : key;
+}
+
 function checkAndRequestLocation() {
     if (!navigator.geolocation) {
-        showLocationWarning('Trình duyệt của bạn không hỗ trợ định vị vị trí.');
+        showLocationWarning(t('locationError'));
         return;
     }
 
     var btn = document.getElementById('getLocationBtn');
     if (btn) {
         btn.disabled = true;
-        btn.textContent = 'Đang lấy vị trí...';
+        btn.textContent = t('gettingLocation');
     }
 
     if (navigator.permissions && navigator.permissions.query) {
@@ -25,9 +34,7 @@ function checkAndRequestLocation() {
 
 function handlePermissionStatus(state) {
     if (state === 'denied') {
-        showLocationWarning(
-            'Bạn đã chặn quyền truy cập vị trí. Vui lòng bật lại trong cài đặt trình duyệt (biểu tượng khoá cạnh URL) để dùng tính năng này.'
-        );
+        showLocationWarning(t('locationDenied'));
         resetButton();
     } else {
         requestLocation();
@@ -58,11 +65,8 @@ function requestLocation() {
         },
         function (error) {
             console.warn('Không lấy được vị trí:', error.message);
-
             if (error.code === 1) {
-                showLocationWarning(
-                    'Bạn đã chặn quyền truy cập vị trí. Vui lòng bật lại trong cài đặt trình duyệt để dùng tính năng này.'
-                );
+                showLocationWarning(t('locationDenied'));
             }
             resetButton();
         }
@@ -73,7 +77,7 @@ function resetButton() {
     var btn = document.getElementById('getLocationBtn');
     if (btn) {
         btn.disabled = false;
-        btn.textContent = '📍 Lấy vị trí của tôi';
+        btn.textContent = '📍 ' + t('getLocationBtn');
     }
 }
 
@@ -99,7 +103,14 @@ function loadNearbyDistances() {
             data.forEach(function (item) {
                 var cell = document.querySelector('.location-cell[data-user-id="' + item.id + '"]');
                 if (cell) {
-                    cell.textContent = item.distance;
+                    // Dịch mã code từ backend sang ngôn ngữ hiện tại
+                    if (item.distance === 'NO_LOCATION') {
+                        cell.textContent = t('noLocation');
+                    } else if (item.distance === 'OUT_OF_RANGE') {
+                        cell.textContent = t('outOfRange');
+                    } else {
+                        cell.textContent = item.distance;
+                    }
                 }
             });
         })

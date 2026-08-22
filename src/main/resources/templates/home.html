@@ -62,7 +62,7 @@
                 <td th:text="${u.email}"></td>
                 <td>
                     <a th:href="@{/messages/{id}(id=${u.id})}"
-                        style="text-decoration: none; font-weight: bold; color: blue;" data-i18n="message">💬 Nhắn tin</a>
+                        style="text-decoration: none; font-weight: bold; color: blue;">💬 <span data-i18n="message">Nhắn tin</span></a>
                 </td>
                 <td class="location-cell" th:attr="data-user-id=${u.id}" style="color: gray;" data-i18n="noLocation">Chưa lấy vị trí</td>
             </tr>
