@@ -4,7 +4,13 @@
 <head>
     <meta charset="UTF-8">
     <title>Find Friends - Home</title>
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7/bundles/stomp.umd.min.js"></script>
 </head>
+<script th:inline="javascript">
+    var currentUserId = /*[[${session.loggedInUser.id}]]*/ null;
+</script>
+<script src="/js/socket-global.js"></script>
 <body>
     <div>
         <span data-i18n="greeting">Xin chào</span>, <b th:text="${username}"></b>! |
@@ -62,7 +68,7 @@
                 <td th:text="${u.email}"></td>
                 <td>
                     <a th:href="@{/messages/{id}(id=${u.id})}"
-                        style="text-decoration: none; font-weight: bold; color: blue;" data-i18n="message">💬 Nhắn tin</a>
+                        style="text-decoration: none; font-weight: bold; color: blue;">💬 <span data-i18n="message">Nhắn tin</span></a>
                 </td>
                 <td class="location-cell" th:attr="data-user-id=${u.id}" style="color: gray;" data-i18n="noLocation">Chưa lấy vị trí</td>
             </tr>

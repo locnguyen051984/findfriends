@@ -4,11 +4,17 @@
     <meta charset="UTF-8">
     <title>Nâng cấp Premium</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7/bundles/stomp.umd.min.js"></script>
     <style>
         body { max-width: 500px; margin: 40px auto; text-align: center; }
         #qrcode { display: flex; justify-content: center; margin: 20px 0; }
     </style>
 </head>
+<script th:inline="javascript">
+    var currentUserId = /*[[${user.id}]]*/ null;
+</script>
+<script src="/js/socket-global.js"></script>
 <body>
 <a href="/home" style="position: fixed; top: 10px; left: 10px;">← Về trang chủ</a>
 <h2>Nâng cấp tài khoản Premium</h2>
