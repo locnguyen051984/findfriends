@@ -10,7 +10,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.Map;
 
 @RequiredArgsConstructor
@@ -131,5 +133,47 @@ public class CallServiceImpl implements CallService {
                     echo
             );
         }
+
+        // Cuộc gọi kết thúc (rejected/completed/missed) -> đẩy live vào timeline chat cho cả 2 phía
+        String type = String.valueOf(result.get("type"));
+        if ("CALL_REJECT".equals(type) || "CALL_END".equals(type)) {
+            Long callLogId = result.get("callLogId") != null
+                    ? Long.valueOf(String.valueOf(result.get("callLogId")))
+                    : null;
+            broadcastCallLog(callLogId);
+        }
+    }
+
+    // Gửi bản ghi call_log đã hoàn tất về timeline chat (queue/message) cho cả caller và callee
+    private void broadcastCallLog(Long callLogId) {
+        if (callLogId == null) {
+            return;
+        }
+        CallLog callLog = callLogRepository.findById(callLogId).orElse(null);
+        if (callLog == null) {
+            return;
+        }
+
+        Map<String, Object> outgoing = new HashMap<>();
+        outgoing.put("type", "CALL");
+        outgoing.put("callerId", callLog.getCallerId());
+        outgoing.put("calleeId", callLog.getCalleeId());
+        outgoing.put("callType", callLog.getCallType());
+        outgoing.put("statusCode", callLog.getStatus() != null ? callLog.getStatus().getCode() : "MISSED");
+        outgoing.put("time", callLog.getCreatedAt().toString());
+        outgoing.put("durationText", formatCallDuration(callLog));
+
+        messagingTemplate.convertAndSendToUser(String.valueOf(callLog.getCallerId()), "/queue/message", outgoing);
+        messagingTemplate.convertAndSendToUser(String.valueOf(callLog.getCalleeId()), "/queue/message", outgoing);
+    }
+
+    private String formatCallDuration(CallLog c) {
+        if (c.getStartedAt() == null || c.getEndedAt() == null) {
+            return null;
+        }
+        Duration d = Duration.between(c.getStartedAt(), c.getEndedAt());
+        long minutes = d.toMinutes();
+        long seconds = d.minusMinutes(minutes).getSeconds();
+        return minutes + " phút " + seconds + " giây";
     }
 }

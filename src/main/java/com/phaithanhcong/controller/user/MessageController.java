@@ -43,34 +43,6 @@ public class MessageController {
         return "message";
     }
 
-    @PostMapping("/{otherUserId}")
-    public String userSendMessage(
-            @PathVariable Long otherUserId,
-            @RequestParam String content,
-            HttpSession session,
-            Model model) {
-
-        User currentUser = getCurrentUser(session);
-        if (currentUser == null) {
-            return "redirect:/";
-        }
-
-        User otherUser = userRepository.findById(otherUserId)
-                .orElseThrow(() -> new RuntimeException("Người dùng không tồn tại"));
-
-        try {
-            messageService.userSendMessage(currentUser, otherUser, content);
-            return "redirect:/messages/" + otherUserId;
-        } catch (RuntimeException e) {
-            List<Map<String, Object>> timeline = messageService.userBuildTimeline(currentUser, otherUser);
-            model.addAttribute("timeline", timeline);
-            model.addAttribute("currentUser", currentUser);
-            model.addAttribute("otherUser", otherUser);
-            model.addAttribute("error", e.getMessage());
-            return "message";
-        }
-    }
-
     private User getCurrentUser(HttpSession session) {
         return (User) session.getAttribute("loggedInUser");
     }
