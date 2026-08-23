@@ -220,14 +220,15 @@
     <div id="chat-box">
       <div th:each="item : ${timeline}">
         <!-- Tin nhắn thường -->
-                <div
+        <div
           th:if="${item.type == 'MESSAGE'}"
           th:class="${item.isMe} ? 'msg me' : 'msg other'"
         >
           <img
             th:if="${item.messageType == 'IMAGE'}"
             th:src="${item.imageUrl}"
-            th:onclick="'ChatUI.openImage(\'' + ${item.imageUrl} + '\')'"
+            th:data-image-url="${item.imageUrl}"
+            onclick="ChatUI.openImage(this.dataset.imageUrl)"
             style="max-width: 220px; border-radius: 8px; display: block"
           />
           <span
