@@ -36,8 +36,7 @@ public class MessageServiceImpl implements MessageService {
     private final UserRepository userRepository;
     private final CallLogRepository callLogRepository;
     private final MessageTypeRepository messageTypeRepository;
-    private static final String UPLOAD_DIR = System.getProperty("user.home")
-            + "/Documents/findfriends-data/uploads/messages/";
+    private static final String UPLOAD_DIR = "D:/findfriends-data/uploads/messages/";
     private static final long MAX_SIZE = 5 * 1024 * 1024;
     private static final List<String> ALLOWED_TYPES = List.of("image/jpeg", "image/png", "image/webp");
 

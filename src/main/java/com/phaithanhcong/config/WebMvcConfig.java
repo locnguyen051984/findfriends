@@ -14,7 +14,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         String uploadDir = "D:/findfriends-data/uploads/";
         Path uploadPath = Paths.get(uploadDir);
-        
+
         // Cấu hình đường dẫn truy cập file tĩnh qua URL /uploads/**
         registry.addResourceHandler("/uploads/**")
                 .addResourceLocations("file:/" + uploadPath.toAbsolutePath().toString().replace("\\", "/") + "/");

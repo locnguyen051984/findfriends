@@ -151,8 +151,7 @@ public class DataSeeder implements CommandLineRunner {
 
         private void clearUploadedImages() {
                 try {
-                        Path uploadPath = Paths.get(System.getProperty("user.home")
-                                        + "/Documents/findfriends-data/uploads/messages/");
+                        Path uploadPath = Paths.get("D:/findfriends-data/uploads/messages/");
                         if (Files.exists(uploadPath)) {
                                 Files.list(uploadPath).forEach(file -> {
                                         try {
