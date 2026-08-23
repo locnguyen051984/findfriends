@@ -8,6 +8,8 @@ import com.phaithanhcong.repository.MessageRepository;
 import com.phaithanhcong.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -20,4 +22,5 @@ public interface MessageService {
     Message userSendMessage(User sender, User receiver, String content);
     List<Message> userGetConversation(Long senderId, Long receiverId);
     List<Map<String, Object>> userBuildTimeline(User currentUser, User otherUser);
+    Message userSendImage(User sender, User receiver, MultipartFile file);
 }
