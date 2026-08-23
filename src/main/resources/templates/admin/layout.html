@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FindFriends Admin</title>
+    <!-- Use Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" th:href="@{/css/admin.css}">
+</head>
+<body>
+    <div class="admin-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2><i class="fa-solid fa-user-shield"></i> Admin</h2>
+            </div>
+            <nav class="sidebar-nav">
+                <a th:href="@{/admin}" class="nav-item" th:classappend="${#httpServletRequest.requestURI == '/admin' ? 'active' : ''}">
+                    <i class="fa-solid fa-chart-pie"></i> Dashboard
+                </a>
+                <a th:href="@{/admin/users}" class="nav-item" th:classappend="${#httpServletRequest.requestURI == '/admin/users' ? 'active' : ''}">
+                    <i class="fa-solid fa-users"></i> Users
+                </a>
+                <a th:href="@{/admin/payments}" class="nav-item" th:classappend="${#httpServletRequest.requestURI == '/admin/payments' ? 'active' : ''}">
+                    <i class="fa-solid fa-credit-card"></i> Payments
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+                <p>&copy; 2026 FindFriends</p>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="topbar">
+                <div class="topbar-title">
+                    <h1>Welcome, Administrator</h1>
+                </div>
+            </header>
+            
+            <div class="content-area">
+                <div th:replace="${content}"></div>
+            </div>
+        </main>
+    </div>
+</body>
+</html>

@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: html}">
+<head>
+    <title>Dashboard</title>
+</head>
+<body>
+    <div th:fragment="content">
+        <h2 class="page-title">Overview</h2>
+        
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon user-icon">
+                    <i class="fa-solid fa-users"></i>
+                </div>
+                <div class="stat-details">
+                    <h3>Total Users</h3>
+                    <p class="stat-number" th:text="${totalUsers}">0</p>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon premium-icon">
+                    <i class="fa-solid fa-crown"></i>
+                </div>
+                <div class="stat-details">
+                    <h3>Premium Users</h3>
+                    <p class="stat-number" th:text="${premiumUsers}">0</p>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon payment-icon">
+                    <i class="fa-solid fa-file-invoice-dollar"></i>
+                </div>
+                <div class="stat-details">
+                    <h3>Total Payments</h3>
+                    <p class="stat-number" th:text="${totalPayments}">0</p>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon call-icon">
+                    <i class="fa-solid fa-phone"></i>
+                </div>
+                <div class="stat-details">
+                    <h3>Total Calls</h3>
+                    <p class="stat-number" th:text="${totalCalls}">0</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

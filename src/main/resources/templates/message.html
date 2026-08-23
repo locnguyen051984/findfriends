@@ -1,0 +1,357 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chat với <span th:text="${otherUser.userName}"></span></title>
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7/bundles/stomp.umd.min.js"></script>
+    <style>
+      body {
+        font-family: sans-serif;
+        max-width: 600px;
+        margin: 30px auto;
+      }
+
+      .msg {
+        margin: 8px 0;
+        padding: 8px 12px;
+        border-radius: 8px;
+        max-width: 70%;
+      }
+
+      .msg.me {
+        background: #d1f0ff;
+        margin-left: auto;
+        text-align: right;
+      }
+
+      .msg.other {
+        background: #f0f0f0;
+      }
+
+      .msg small {
+        display: block;
+        color: #888;
+        font-size: 11px;
+      }
+
+      .error {
+        color: red;
+      }
+
+      form {
+        display: flex;
+        gap: 8px;
+        margin-top: 16px;
+      }
+
+      input[type="text"] {
+        flex: 1;
+        padding: 8px;
+      }
+    </style>
+  </head>
+  <script th:inline="javascript">
+    var currentUserId = /*[[${currentUser.id}]]*/ null;
+    var otherUserId = /*[[${otherUser.id}]]*/ null;
+    var otherUserName = /*[[${otherUser.userName}]]*/ "";
+  </script>
+  <script src="/js/socket-global.js"></script>
+  <script src="/js/call.js"></script>
+  <body>
+    <div style="margin-bottom: 12px">
+      <a
+        href="/home"
+        style="text-decoration: none; font-weight: bold; color: #555"
+        >⬅️ Quay lại Trang chủ</a
+      >
+    </div>
+
+    <h2>
+      Chat với <span th:text="${otherUser.userName}"></span> (ID:
+      <span th:text="${otherUser.id}"></span>)
+    </h2>
+    <div style="margin-bottom: 12px">
+      <button type="button" onclick="CallManager.startCall('VOICE')">
+        📞 Gọi thoại
+      </button>
+      <button type="button" onclick="CallManager.startCall('VIDEO')">
+        🎥 Gọi video
+      </button>
+    </div>
+
+    <!-- Call Modal -->
+    <div
+      id="callModal"
+      style="
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.6);
+        z-index: 999;
+        justify-content: center;
+        align-items: center;
+      "
+    >
+      <div
+        style="
+          background: #fff;
+          padding: 24px;
+          border-radius: 8px;
+          text-align: center;
+          min-width: 300px;
+        "
+      >
+        <div
+          id="callStatusText"
+          style="font-size: 16px; margin-bottom: 16px"
+        ></div>
+
+        <div id="videoContainer" style="display: none; margin-bottom: 16px">
+          <video
+            id="remoteVideo"
+            autoplay
+            playsinline
+            style="width: 100%; border-radius: 6px; background: #000"
+          ></video>
+          <video
+            id="localVideo"
+            autoplay
+            playsinline
+            muted
+            style="
+              width: 80px;
+              position: absolute;
+              bottom: 80px;
+              right: 24px;
+              border-radius: 6px;
+              border: 2px solid #fff;
+            "
+          ></video>
+        </div>
+
+        <div id="incomingCallButtons" style="display: none">
+          <button
+            type="button"
+            onclick="CallManager.acceptCall()"
+            style="
+              background: green;
+              color: #fff;
+              padding: 8px 16px;
+              margin-right: 8px;
+            "
+          >
+            Chấp nhận
+          </button>
+          <button
+            type="button"
+            onclick="CallManager.rejectCall()"
+            style="background: red; color: #fff; padding: 8px 16px"
+          >
+            Từ chối
+          </button>
+        </div>
+        <div id="callingButtons" style="display: none">
+          <button
+            type="button"
+            onclick="CallManager.endCall()"
+            style="background: red; color: #fff; padding: 8px 16px"
+          >
+            Hủy cuộc gọi
+          </button>
+        </div>
+
+        <div id="activeCallButtons" style="display: none">
+          <button
+            type="button"
+            id="toggleMicBtn"
+            onclick="CallManager.toggleMic()"
+          >
+            🎤 Tắt mic
+          </button>
+          <button
+            type="button"
+            id="toggleCamBtn"
+            onclick="CallManager.toggleCam()"
+            style="display: none"
+          >
+            📷 Tắt cam
+          </button>
+          <button
+            type="button"
+            onclick="CallManager.endCall()"
+            style="background: red; color: #fff; padding: 8px 16px"
+          >
+            Kết thúc
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div th:if="${error}" class="error" th:text="${error}"></div>
+
+    <div id="chat-box">
+      <div th:each="item : ${timeline}">
+        <!-- Tin nhắn thường -->
+        <div
+          th:if="${item.type == 'MESSAGE'}"
+          th:class="${item.isMe} ? 'msg me' : 'msg other'"
+        >
+          <span th:text="${item.content}"></span>
+          <small
+            th:text="${#temporals.format(item.time, 'HH:mm dd/MM/yyyy')}"
+          ></small>
+        </div>
+
+        <!-- Cuộc gọi -->
+        <div
+          th:if="${item.type == 'CALL'}"
+          th:class="${item.isMe} ? 'msg me' : 'msg other'"
+          style="display: flex; align-items: center; gap: 8px"
+        >
+          <span
+            th:text="${item.callType == 'VIDEO' ? '🎥' : '📞'}"
+            style="font-size: 18px"
+          ></span>
+          <span>
+            <span
+              th:if="${item.statusCode == 'COMPLETED'}"
+              th:text="${item.isMe ? 'Bạn đã gọi' : 'Cuộc gọi đến'} + ' - ' + ${item.durationText}"
+            ></span>
+            <span th:if="${item.statusCode == 'MISSED'}">Cuộc gọi nhỡ</span>
+            <span
+              th:if="${item.statusCode == 'REJECTED'}"
+              th:text="${item.isMe ? 'Cuộc gọi bị từ chối' : 'Bạn đã từ chối cuộc gọi'}"
+            ></span>
+            <span th:if="${item.statusCode == 'FAILED'}"
+              >Cuộc gọi thất bại</span
+            >
+            <small
+              th:text="${#temporals.format(item.time, 'HH:mm dd/MM/yyyy')}"
+              style="display: block"
+            ></small>
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <div style="display: flex; gap: 8px; margin-top: 16px">
+      <input
+        type="text"
+        id="messageInput"
+        placeholder="Nhập tin nhắn..."
+        autofocus
+      />
+      <button type="button" onclick="ChatUI.sendMessage()">Gửi</button>
+    </div>
+
+    <script>
+      var ChatUI = {
+        onMessageReceived: function (message) {
+          var isMe = Number(message.senderId) === Number(currentUserId);
+          var belongsHere =
+            Number(message.senderId) === Number(otherUserId) ||
+            Number(message.receiverId) === Number(otherUserId);
+          if (!belongsHere) return; // message from/to someone else - not this conversation
+
+          var div = document.createElement("div");
+          div.className = isMe ? "msg me" : "msg other";
+
+          var content = document.createElement("span");
+          content.textContent = message.content;
+
+          var time = document.createElement("small");
+          time.textContent = new Date(message.sentAt).toLocaleString("vi-VN");
+
+          div.appendChild(content);
+          div.appendChild(time);
+          document.getElementById("chat-box").appendChild(div);
+          div.scrollIntoView({ block: "end" });
+        },
+        onCallReceived: function (message) {
+          var belongsHere =
+            Number(message.callerId) === Number(otherUserId) ||
+            Number(message.calleeId) === Number(otherUserId);
+          if (!belongsHere) return;
+
+          var isMe = Number(message.callerId) === Number(currentUserId);
+
+          var wrapper = document.createElement("div");
+          wrapper.className = isMe ? "msg me" : "msg other";
+          wrapper.style.display = "flex";
+          wrapper.style.alignItems = "center";
+          wrapper.style.gap = "8px";
+
+          var icon = document.createElement("span");
+          icon.style.fontSize = "18px";
+          icon.textContent = message.callType === "VIDEO" ? "🎥" : "📞";
+
+          var statusText = document.createElement("span");
+          switch (message.statusCode) {
+            case "COMPLETED":
+              statusText.textContent =
+                (isMe ? "Bạn đã gọi" : "Cuộc gọi đến") +
+                " - " +
+                message.durationText;
+              break;
+            case "MISSED":
+              statusText.textContent = "Cuộc gọi nhỡ";
+              break;
+            case "REJECTED":
+              statusText.textContent = isMe
+                ? "Cuộc gọi bị từ chối"
+                : "Bạn đã từ chối cuộc gọi";
+              break;
+            default:
+              statusText.textContent = "Cuộc gọi thất bại";
+          }
+
+          var time = document.createElement("small");
+          time.style.display = "block";
+          time.textContent = new Date(message.time).toLocaleString("vi-VN");
+
+          var textWrap = document.createElement("span");
+          textWrap.appendChild(statusText);
+          textWrap.appendChild(time);
+
+          wrapper.appendChild(icon);
+          wrapper.appendChild(textWrap);
+          document.getElementById("chat-box").appendChild(wrapper);
+          wrapper.scrollIntoView({ block: "end" });
+        },
+
+        sendMessage: function () {
+          var input = document.getElementById("messageInput");
+          var content = input.value.trim();
+          if (!content) return;
+
+          GlobalSocket.stompClient.publish({
+            destination: "/app/message.send",
+            body: JSON.stringify({ toUserId: otherUserId, content: content }),
+          });
+          input.value = "";
+        },
+      };
+
+      document
+        .getElementById("messageInput")
+        .addEventListener("keydown", function (e) {
+          if (e.key === "Enter") ChatUI.sendMessage();
+        });
+      document.addEventListener("DOMContentLoaded", function () {
+        var pending = sessionStorage.getItem("pendingIncomingCall");
+        if (!pending) return;
+        sessionStorage.removeItem("pendingIncomingCall");
+
+        var offer = JSON.parse(pending);
+        if (Number(offer.fromUserId) === Number(otherUserId)) {
+          CallManager.onSignalReceived(offer);
+        }
+      });
+    </script>
+  </body>
+</html>
