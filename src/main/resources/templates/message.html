@@ -50,6 +50,29 @@
         flex: 1;
         padding: 8px;
       }
+      .lightbox {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.85);
+        z-index: 1000;
+        justify-content: center;
+        align-items: center;
+        cursor: zoom-out;
+      }
+
+      .lightbox img {
+        max-width: 90%;
+        max-height: 90%;
+        border-radius: 4px;
+      }
+
+      .msg img {
+        cursor: zoom-in;
+      }
     </style>
   </head>
   <script th:inline="javascript">
@@ -197,11 +220,20 @@
     <div id="chat-box">
       <div th:each="item : ${timeline}">
         <!-- Tin nhắn thường -->
-        <div
+                <div
           th:if="${item.type == 'MESSAGE'}"
           th:class="${item.isMe} ? 'msg me' : 'msg other'"
         >
-          <span th:text="${item.content}"></span>
+          <img
+            th:if="${item.messageType == 'IMAGE'}"
+            th:src="${item.imageUrl}"
+            th:onclick="'ChatUI.openImage(\'' + ${item.imageUrl} + '\')'"
+            style="max-width: 220px; border-radius: 8px; display: block"
+          />
+          <span
+            th:if="${item.messageType == null or item.messageType == 'TEXT'}"
+            th:text="${item.content}"
+          ></span>
           <small
             th:text="${#temporals.format(item.time, 'HH:mm dd/MM/yyyy')}"
           ></small>
@@ -246,6 +278,19 @@
         placeholder="Nhập tin nhắn..."
         autofocus
       />
+      <input
+        type="file"
+        id="imageInput"
+        accept="image/jpeg,image/png,image/webp"
+        style="display: none"
+        onchange="ChatUI.sendImage(this)"
+      />
+      <button
+        type="button"
+        onclick="document.getElementById('imageInput').click()"
+      >
+        🖼️
+      </button>
       <button type="button" onclick="ChatUI.sendMessage()">Gửi</button>
     </div>
 
@@ -256,21 +301,56 @@
           var belongsHere =
             Number(message.senderId) === Number(otherUserId) ||
             Number(message.receiverId) === Number(otherUserId);
-          if (!belongsHere) return; // message from/to someone else - not this conversation
+          if (!belongsHere) return;
 
           var div = document.createElement("div");
           div.className = isMe ? "msg me" : "msg other";
 
-          var content = document.createElement("span");
-          content.textContent = message.content;
+          if (message.type === "IMAGE") {
+            var img = document.createElement("img");
+            img.src = message.imageUrl;
+            img.style.maxWidth = "220px";
+            img.style.borderRadius = "8px";
+            img.style.display = "block";
+            img.style.cursor = "zoom-in";
+            img.onclick = function () {
+              ChatUI.openImage(message.imageUrl);
+            };
+            div.appendChild(img);
+          } else {
+            var content = document.createElement("span");
+            content.textContent = message.content;
+            div.appendChild(content);
+          }
 
           var time = document.createElement("small");
           time.textContent = new Date(message.sentAt).toLocaleString("vi-VN");
-
-          div.appendChild(content);
           div.appendChild(time);
+
           document.getElementById("chat-box").appendChild(div);
           div.scrollIntoView({ block: "end" });
+        },
+
+        sendImage: function (input) {
+          var file = input.files[0];
+          if (!file) return;
+
+          var formData = new FormData();
+          formData.append("file", file);
+
+          fetch("/messages/" + otherUserId + "/image", {
+            method: "POST",
+            body: formData,
+          })
+            .then(function (res) {
+              if (!res.ok) throw new Error("Upload thất bại");
+              return res.json();
+            })
+            .catch(function (err) {
+              alert(err.message);
+            });
+
+          input.value = ""; // reset input, cho phép chọn lại cùng file lần sau
         },
         onCallReceived: function (message) {
           var belongsHere =
@@ -335,6 +415,14 @@
           });
           input.value = "";
         },
+        openImage: function (url) {
+          document.getElementById("lightboxImg").src = url;
+          document.getElementById("lightbox").style.display = "flex";
+        },
+
+        closeImage: function () {
+          document.getElementById("lightbox").style.display = "none";
+        },
       };
 
       document
@@ -353,5 +441,8 @@
         }
       });
     </script>
+    <div class="lightbox" id="lightbox" onclick="ChatUI.closeImage()">
+      <img id="lightboxImg" src="" />
+    </div>
   </body>
 </html>
