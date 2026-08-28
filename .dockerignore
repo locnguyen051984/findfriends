@@ -1,0 +1,9 @@
+.git
+.gitignore
+.gitattributes
+.project-memory
+target/
+*.md
+Dockerfile
+.dockerignore
+
