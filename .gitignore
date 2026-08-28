@@ -36,3 +36,15 @@ face/.venv312/
 face/__pycache__/
 face/faces.db
 .venv312/
+
+### Agent & AI Config ###
+AGENTS.md
+.project-memory/
+
+### Environment & Properties ###
+src/main/resources/application.properties
+src/main/resources/application-*.properties
+!src/main/resources/application.properties.example
+*.env
+.env*
+.env.local

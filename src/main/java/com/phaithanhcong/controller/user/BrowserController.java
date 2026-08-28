@@ -76,7 +76,7 @@ public class BrowserController {
                 })
                 .toList();
     }
-
+    
     @PostMapping("/approve")
     @ResponseBody
     public Map<String, String> approve(@RequestParam Long requestId, HttpSession session) {
