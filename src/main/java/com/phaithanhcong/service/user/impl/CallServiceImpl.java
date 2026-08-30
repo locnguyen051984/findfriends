@@ -97,7 +97,10 @@ public class CallServiceImpl implements CallService {
             }
             case "ANSWER" -> userMarkStarted(callLogId);
             case "CALL_REJECT" -> userEndCall(callLogId, "REJECTED");
+            case "CALL_BUSY" -> userEndCall(callLogId, "REJECTED");
             case "CALL_END" -> userEndCall(callLogId, "COMPLETED");
+            case "CALL_FAILED" -> userEndCall(callLogId, "FAILED");
+            case "CALL_TIMEOUT" -> userEndCall(callLogId, "MISSED");
             default -> {
             } // ICE_CANDIDATE: không đụng call_log
         }
@@ -134,9 +137,9 @@ public class CallServiceImpl implements CallService {
             );
         }
 
-        // Cuộc gọi kết thúc (rejected/completed/missed) -> đẩy live vào timeline chat cho cả 2 phía
+        // Cuộc gọi kết thúc (rejected/busy/completed/missed/failed) -> đẩy live vào timeline chat cho cả 2 phía
         String type = String.valueOf(result.get("type"));
-        if ("CALL_REJECT".equals(type) || "CALL_END".equals(type)) {
+        if ("CALL_REJECT".equals(type) || "CALL_BUSY".equals(type) || "CALL_END".equals(type) || "CALL_FAILED".equals(type) || "CALL_TIMEOUT".equals(type)) {
             Long callLogId = result.get("callLogId") != null
                     ? Long.valueOf(String.valueOf(result.get("callLogId")))
                     : null;

@@ -22,6 +22,9 @@ var CallManager = {
   pendingIceCandidates: [],
   remoteDescriptionSet: false,
 
+  // -- timeout --
+  callTimeoutTimer: null,
+
   // ---------- SOCKET ----------
   // Connection is shared and managed by socket-global.js (GlobalSocket).
   // This page just calls sendSignal() and receives via GlobalSocket.onCallSignal -> onSignalReceived().
@@ -61,8 +64,23 @@ var CallManager = {
       case "CALL_REJECT":
         this.onCallRejected();
         break;
+      case "CALL_BUSY":
+        this.cleanup();
+        UI.showCallModal("Người dùng đang bận");
+        setTimeout(function() { UI.hideCallModal(); }, 2000);
+        break;
       case "CALL_END":
         this.cleanup();
+        break;
+      case "CALL_FAILED":
+        this.cleanup();
+        UI.showCallModal("Cuộc gọi thất bại do rớt mạng");
+        setTimeout(function() { UI.hideCallModal(); }, 2000);
+        break;
+      case "CALL_TIMEOUT":
+        this.cleanup();
+        UI.showCallModal("Cuộc gọi nhỡ");
+        setTimeout(function() { UI.hideCallModal(); }, 2000);
         break;
     }
   },
@@ -91,6 +109,14 @@ var CallManager = {
           "OFFER",
           JSON.stringify(self.peerConnection.localDescription),
         );
+        // Start timeout 30s
+        self.callTimeoutTimer = setTimeout(function () {
+          console.log("Call timeout, nobody answered.");
+          self.sendSignal("CALL_TIMEOUT", null);
+          self.cleanup();
+          UI.showCallModal("Không ai nhấc máy");
+          setTimeout(function() { UI.hideCallModal(); }, 2000);
+        }, 30000);
       })
       .catch(function (err) {
         self.onMediaError(err);
@@ -100,15 +126,43 @@ var CallManager = {
   // ---------- INCOMING ----------
 
   onOfferReceived: function (message) {
+    if (this.direction !== null || this.peerConnection !== null) {
+      // Đang bận
+      GlobalSocket.stompClient.publish({
+        destination: "/app/call.signal",
+        body: JSON.stringify({
+          type: "CALL_BUSY",
+          fromUserId: currentUserId,
+          toUserId: message.fromUserId,
+          callType: message.callType,
+          callLogId: message.callLogId
+        })
+      });
+      return;
+    }
+
     this.callLogId = message.callLogId;
     this.callType = message.callType;
     this.direction = "INCOMING";
     window.pendingOffer = JSON.parse(message.payload);
     UI.showIncomingCallUI(this.callType);
+    
+    // Timeout cho người nhận nếu người gọi rớt mạng ngang
+    var self = this;
+    this.callTimeoutTimer = setTimeout(function () {
+      console.log("Incoming call timeout.");
+      self.cleanup();
+      UI.showCallModal("Cuộc gọi nhỡ");
+      setTimeout(function() { UI.hideCallModal(); }, 2000);
+    }, 31000);
   },
 
   acceptCall: function () {
     var self = this;
+    if (this.callTimeoutTimer) {
+      clearTimeout(this.callTimeoutTimer);
+      this.callTimeoutTimer = null;
+    }
     document.getElementById("incomingCallButtons").style.display = "none";
 
     this.getMediaStream(this.callType)
@@ -148,6 +202,10 @@ var CallManager = {
   },
 
   onAnswerReceived: function (message) {
+    if (this.callTimeoutTimer) {
+      clearTimeout(this.callTimeoutTimer);
+      this.callTimeoutTimer = null;
+    }
     var self = this;
     this.callLogId = message.callLogId; // Cập nhật callLogId cho người gọi
     this.peerConnection
@@ -185,6 +243,19 @@ var CallManager = {
 
     this.peerConnection.ontrack = function (event) {
       document.getElementById("remoteVideo").srcObject = event.streams[0];
+    };
+
+    this.peerConnection.oniceconnectionstatechange = function () {
+      if (
+        self.peerConnection.iceConnectionState === "disconnected" ||
+        self.peerConnection.iceConnectionState === "failed"
+      ) {
+        console.warn("ICE Connection State:", self.peerConnection.iceConnectionState);
+        self.sendSignal("CALL_FAILED", null);
+        self.cleanup();
+        UI.showCallModal("Mất kết nối mạng");
+        setTimeout(function() { UI.hideCallModal(); }, 2000);
+      }
     };
   },
 
@@ -260,6 +331,10 @@ var CallManager = {
   // ---------- CLEANUP ----------
 
   cleanup: function () {
+    if (this.callTimeoutTimer) {
+      clearTimeout(this.callTimeoutTimer);
+      this.callTimeoutTimer = null;
+    }
     if (this.peerConnection) {
       this.peerConnection.close();
       this.peerConnection = null;
