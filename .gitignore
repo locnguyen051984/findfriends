@@ -39,6 +39,7 @@ face/faces.db
 
 ### Agent & AI Config ###
 AGENTS.md
+PROJECT_RULES.md
 .project-memory/
 
 ### Environment & Properties ###
