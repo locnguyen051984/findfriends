@@ -151,6 +151,7 @@ var CallManager = {
     var self = this;
     this.callTimeoutTimer = setTimeout(function () {
       console.log("Incoming call timeout.");
+      self.sendSignal("CALL_TIMEOUT", null);
       self.cleanup();
       UI.showCallModal("Cuộc gọi nhỡ");
       setTimeout(function() { UI.hideCallModal(); }, 2000);
