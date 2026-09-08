@@ -14,11 +14,17 @@ public class CallSignalingController {
 
     @MessageMapping("/call.signal")
     public void handleSignal(Map<String, Object> message, java.security.Principal principal) {
+        if (principal == null) return;
         Long principalId = Long.valueOf(principal.getName());
-        Long fromUserId = Long.valueOf(String.valueOf(message.get("fromUserId")));
-        if (!principalId.equals(fromUserId)) {
-            return; // ignore invalid sender
+
+        // Ghi đè fromUserId từ token (Principal), không tin tưởng payload từ client
+        message.put("fromUserId", principalId);
+
+        // Validate toUserId
+        if (message.get("toUserId") == null) {
+            return;
         }
+
         callService.userProcessSignal(message);
     }
 }

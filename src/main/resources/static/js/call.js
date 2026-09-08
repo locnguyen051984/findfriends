@@ -95,11 +95,17 @@ var CallManager = {
     UI.showCallingUI();
 
     this.getMediaStream(type)
+      .catch(function(err) {
+        self.onMediaError(err, false);
+        return null;
+      })
       .then(function (stream) {
         self.setupLocalMedia(stream);
-      })
-      .then(function () {
-        return self.peerConnection.createOffer();
+        var offerOptions = {
+          offerToReceiveAudio: true,
+          offerToReceiveVideo: self.callType === "VIDEO"
+        };
+        return self.peerConnection.createOffer(offerOptions);
       })
       .then(function (offer) {
         return self.peerConnection.setLocalDescription(offer);
@@ -109,9 +115,7 @@ var CallManager = {
           "OFFER",
           JSON.stringify(self.peerConnection.localDescription),
         );
-        // Start timeout 30s
         self.callTimeoutTimer = setTimeout(function () {
-          console.log("Call timeout, nobody answered.");
           self.sendSignal("CALL_TIMEOUT", null);
           self.cleanup();
           UI.showCallModal("Không ai nhấc máy");
@@ -119,7 +123,8 @@ var CallManager = {
         }, 30000);
       })
       .catch(function (err) {
-        self.onMediaError(err);
+        console.error("WebRTC Error (startCall):", err);
+        self.cleanup();
       });
   },
 
@@ -127,7 +132,6 @@ var CallManager = {
 
   onOfferReceived: function (message) {
     if (this.direction !== null || this.peerConnection !== null) {
-      // Đang bận
       GlobalSocket.stompClient.publish({
         destination: "/app/call.signal",
         body: JSON.stringify({
@@ -147,10 +151,8 @@ var CallManager = {
     window.pendingOffer = JSON.parse(message.payload);
     UI.showIncomingCallUI(this.callType);
     
-    // Timeout cho người nhận nếu người gọi rớt mạng ngang
     var self = this;
     this.callTimeoutTimer = setTimeout(function () {
-      console.log("Incoming call timeout.");
       self.sendSignal("CALL_TIMEOUT", null);
       self.cleanup();
       UI.showCallModal("Cuộc gọi nhỡ");
@@ -167,10 +169,12 @@ var CallManager = {
     document.getElementById("incomingCallButtons").style.display = "none";
 
     this.getMediaStream(this.callType)
+      .catch(function (err) {
+        self.onMediaError(err, true);
+        return null;
+      })
       .then(function (stream) {
         self.setupLocalMedia(stream);
-      })
-      .then(function () {
         return self.peerConnection.setRemoteDescription(
           new RTCSessionDescription(window.pendingOffer),
         );
@@ -192,8 +196,8 @@ var CallManager = {
         UI.showActiveCallUI(self.callType);
       })
       .catch(function (err) {
-        self.onMediaError(err);
-        self.rejectCall();
+        console.error("Lỗi WebRTC trong quá trình acceptCall:", err);
+        self.cleanup();
       });
   },
 
@@ -207,18 +211,24 @@ var CallManager = {
       clearTimeout(this.callTimeoutTimer);
       this.callTimeoutTimer = null;
     }
+    if (!this.peerConnection) return;
+
     var self = this;
-    this.callLogId = message.callLogId; // Cập nhật callLogId cho người gọi
-    this.peerConnection
-      .setRemoteDescription(
-        new RTCSessionDescription(JSON.parse(message.payload)),
-      )
-      .then(function () {
-        self.onRemoteDescriptionSet();
-      })
-      .then(function () {
-        UI.showActiveCallUI(self.callType);
-      });
+    this.callLogId = message.callLogId;
+    try {
+      var payload = JSON.parse(message.payload);
+      this.peerConnection
+        .setRemoteDescription(new RTCSessionDescription(payload))
+        .then(function () {
+          self.onRemoteDescriptionSet();
+        })
+        .then(function () {
+          UI.showActiveCallUI(self.callType);
+        })
+        .catch(console.error);
+    } catch (e) {
+      console.error("Invalid ANSWER payload", e);
+    }
   },
 
   onCallRejected: function () {
@@ -247,11 +257,22 @@ var CallManager = {
     };
 
     this.peerConnection.oniceconnectionstatechange = function () {
-      if (
-        self.peerConnection.iceConnectionState === "disconnected" ||
-        self.peerConnection.iceConnectionState === "failed"
-      ) {
-        console.warn("ICE Connection State:", self.peerConnection.iceConnectionState);
+      console.log("ICE Connection State:", self.peerConnection.iceConnectionState);
+      if (self.peerConnection.iceConnectionState === "disconnected") {
+        self.iceDisconnectTimer = setTimeout(function() {
+          if (self.peerConnection && self.peerConnection.iceConnectionState === "disconnected") {
+            self.sendSignal("CALL_FAILED", null);
+            self.cleanup();
+            UI.showCallModal("Mất kết nối mạng");
+            setTimeout(function() { UI.hideCallModal(); }, 2000);
+          }
+        }, 7000); // Đợi 7s xem có tự reconnect không
+      } else if (self.peerConnection.iceConnectionState === "connected" || self.peerConnection.iceConnectionState === "completed") {
+        if (self.iceDisconnectTimer) {
+          clearTimeout(self.iceDisconnectTimer);
+          self.iceDisconnectTimer = null;
+        }
+      } else if (self.peerConnection.iceConnectionState === "failed") {
         self.sendSignal("CALL_FAILED", null);
         self.cleanup();
         UI.showCallModal("Mất kết nối mạng");
@@ -262,29 +283,40 @@ var CallManager = {
 
   setupLocalMedia: function (stream) {
     this.localStream = stream;
-    UI.attachLocalStream(stream, this.callType);
+    if (stream) {
+      UI.attachLocalStream(stream, this.callType);
+    }
     this.createPeerConnection();
     var self = this;
-    stream.getTracks().forEach(function (track) {
-      self.peerConnection.addTrack(track, stream);
-    });
+    if (stream) {
+      stream.getTracks().forEach(function (track) {
+        self.peerConnection.addTrack(track, stream);
+      });
+    }
   },
 
   onRemoteDescriptionSet: function () {
     var self = this;
     this.remoteDescriptionSet = true;
     this.pendingIceCandidates.forEach(function (candidate) {
-      self.peerConnection.addIceCandidate(candidate);
+      if (self.peerConnection) {
+        self.peerConnection.addIceCandidate(candidate).catch(console.error);
+      }
     });
     this.pendingIceCandidates = [];
   },
 
   onIceCandidateReceived: function (message) {
-    var candidate = new RTCIceCandidate(JSON.parse(message.payload));
-    if (this.peerConnection && this.remoteDescriptionSet) {
-      this.peerConnection.addIceCandidate(candidate);
-    } else {
-      this.pendingIceCandidates.push(candidate);
+    if (!message.payload) return;
+    try {
+      var candidate = new RTCIceCandidate(JSON.parse(message.payload));
+      if (this.peerConnection && this.remoteDescriptionSet) {
+        this.peerConnection.addIceCandidate(candidate).catch(console.error);
+      } else {
+        this.pendingIceCandidates.push(candidate);
+      }
+    } catch (e) {
+      console.error("Invalid ICE Candidate payload", e);
     }
   },
 
@@ -296,9 +328,18 @@ var CallManager = {
     return navigator.mediaDevices.getUserMedia(constraints);
   },
 
-  onMediaError: function (err) {
+  onMediaError: function (err, isIncoming) {
     console.warn("Không lấy được media:", err);
-    UI.hideCallModal();
+    alert(isIncoming
+      ? "Không thể truy cập Camera/Micro. Bạn sẽ tham gia cuộc gọi với chế độ chỉ xem/nghe."
+      : "Vui lòng cấp quyền Camera/Micro trên trình duyệt để bắt đầu cuộc gọi!");
+
+    if (!isIncoming) {
+      this.cleanup();
+    } else {
+      document.getElementById("toggleMicBtn").disabled = true;
+      document.getElementById("toggleCamBtn").disabled = true;
+    }
   },
 
   // ---------- MIC / CAM CONTROL ----------
@@ -336,6 +377,10 @@ var CallManager = {
       clearTimeout(this.callTimeoutTimer);
       this.callTimeoutTimer = null;
     }
+    if (this.iceDisconnectTimer) {
+      clearTimeout(this.iceDisconnectTimer);
+      this.iceDisconnectTimer = null;
+    }
     if (this.peerConnection) {
       this.peerConnection.close();
       this.peerConnection = null;
@@ -357,9 +402,17 @@ var CallManager = {
 
     document.getElementById("toggleMicBtn").textContent = "🎤 Tắt mic";
     document.getElementById("toggleCamBtn").textContent = "📷 Tắt cam";
+    document.getElementById("toggleMicBtn").disabled = false;
+    document.getElementById("toggleCamBtn").disabled = false;
     UI.hideCallModal();
   },
 };
+
+window.addEventListener("beforeunload", function() {
+  if (CallManager.direction !== null) {
+    CallManager.sendSignal("CALL_END", null);
+  }
+});
 
 // ================== UI HELPERS ==================
 var UI = {
