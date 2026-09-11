@@ -35,4 +35,7 @@ public class Message {
 
     @Column(name = "sentAt")
     private LocalDateTime sentAt;
+
+    @Column(name = "call_log_id")
+    private Long callLogId;
 }

@@ -66,38 +66,40 @@ public class MessageServiceImpl implements MessageService {
                 .findBySenderIdAndReceiverId(senderId, receiverId);
     }
 
-    // Gộp tin nhắn + lịch sử cuộc gọi thành 1 timeline, sort theo thời gian
+    // Xây dựng timeline dựa trên bảng messages (đã bao gồm cả tin nhắn CALL)
     public List<Map<String, Object>> userBuildTimeline(User currentUser, User otherUser) {
         List<Message> messages = userGetConversation(currentUser.getId(), otherUser.getId());
-        List<CallLog> calls = callLogRepository.findByCallerIdAndCalleeIdOrCalleeIdAndCallerId(
-                currentUser.getId(), otherUser.getId(), currentUser.getId(), otherUser.getId());
-
         List<Map<String, Object>> timeline = new ArrayList<>();
 
         for (Message m : messages) {
             Map<String, Object> item = new HashMap<>();
-            item.put("type", "MESSAGE");
-            item.put("time", m.getSentAt());
-            item.put("isMe", m.getSenderId().equals(currentUser.getId()));
-            item.put("messageType", m.getMessageType() != null ? m.getMessageType().getCode() : "TEXT");
-            item.put("content", m.getContent());
-            item.put("imageUrl", m.getImageUrl());
+            String msgType = m.getMessageType() != null ? m.getMessageType().getCode() : "TEXT";
+
+            if ("CALL".equals(msgType)) {
+                item.put("type", "CALL");
+                item.put("time", m.getSentAt());
+                item.put("isMe", m.getSenderId().equals(currentUser.getId()));
+                
+                if (m.getCallLogId() != null) {
+                    com.phaithanhcong.model.CallLog c = callLogRepository.findById(m.getCallLogId()).orElse(null);
+                    if (c != null) {
+                        item.put("callType", c.getCallType()); // VOICE | VIDEO
+                        String statusCode = c.getStatus() != null ? c.getStatus().getCode() : "MISSED";
+                        item.put("statusCode", statusCode);
+                        item.put("durationText", formatCallDuration(c));
+                    }
+                }
+            } else {
+                item.put("type", "MESSAGE");
+                item.put("time", m.getSentAt());
+                item.put("isMe", m.getSenderId().equals(currentUser.getId()));
+                item.put("messageType", msgType);
+                item.put("content", m.getContent());
+                item.put("imageUrl", m.getImageUrl());
+            }
             timeline.add(item);
         }
 
-        for (CallLog c : calls) {
-            Map<String, Object> item = new HashMap<>();
-            item.put("type", "CALL");
-            item.put("time", c.getCreatedAt());
-            item.put("isMe", c.getCallerId().equals(currentUser.getId()));
-            item.put("callType", c.getCallType()); // VOICE | VIDEO
-            String statusCode = c.getStatus() != null ? c.getStatus().getCode() : "MISSED";
-            item.put("statusCode", statusCode);
-            item.put("durationText", formatCallDuration(c));
-            timeline.add(item);
-        }
-
-        timeline.sort(Comparator.comparing(item -> (LocalDateTime) item.get("time")));
         return timeline;
     }
 

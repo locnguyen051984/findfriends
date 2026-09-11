@@ -97,7 +97,7 @@ var CallManager = {
     this.getMediaStream(type)
       .catch(function(err) {
         self.onMediaError(err, false);
-        return null;
+        return Promise.reject(err);
       })
       .then(function (stream) {
         self.setupLocalMedia(stream);

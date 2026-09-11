@@ -23,19 +23,33 @@ public class CallServiceImpl implements CallService {
 
     private final CallLogRepository callLogRepository;
     private final CallStatusRepository callStatusRepository;
+    private final com.phaithanhcong.repository.MessageRepository messageRepository;
+    private final com.phaithanhcong.repository.MessageTypeRepository messageTypeRepository;
     private final SimpMessagingTemplate messagingTemplate;
 
     // Bộ nhớ đệm lưu trạng thái bận (userId -> callLogId)
     private final Map<Long, Long> activeCalls = new java.util.concurrent.ConcurrentHashMap<>();
+    
+    private final java.util.concurrent.ScheduledExecutorService scheduler = java.util.concurrent.Executors.newScheduledThreadPool(10);
 
     public void releaseUserBusyState(Long userId) {
         if (userId != null) {
+            Long callLogId = activeCalls.get(userId);
+            if (callLogId != null && callLogId != -1L) {
+                boolean ended = userEndCall(callLogId, "FAILED", userId);
+                if (ended) {
+                    broadcastCallLog(callLogId);
+                }
+            }
             activeCalls.remove(userId);
         }
     }
 
     public CallLog userStartCall(Long callerId, Long calleeId, String callType) {
         if (callerId == null || calleeId == null || callType == null || callType.isEmpty()) {
+            return null;
+        }
+        if (callerId.equals(calleeId)) {
             return null;
         }
 
@@ -106,28 +120,27 @@ public class CallServiceImpl implements CallService {
         return true;
     }
 
-    public Map<String, Object> handleSignal(Map<String, Object> message) {
-        String type = String.valueOf(message.get("type"));
-        Long fromUserId = Long.valueOf(String.valueOf(message.get("fromUserId")));
-        Long toUserId = Long.valueOf(String.valueOf(message.get("toUserId")));
-        String callType = message.get("callType") != null ? String.valueOf(message.get("callType")) : "VOICE";
-        Long callLogId = message.get("callLogId") != null
-                ? Long.valueOf(String.valueOf(message.get("callLogId")))
-                : null;
+    public com.phaithanhcong.dto.CallSignalDTO handleSignal(com.phaithanhcong.dto.CallSignalDTO message) {
+        String type = message.getType();
+        Long fromUserId = message.getFromUserId();
+        Long toUserId = message.getToUserId();
+        String callType = message.getCallType() != null ? message.getCallType() : "VOICE";
+        Long callLogId = message.getCallLogId();
 
         switch (type) {
             case "OFFER" -> {
+                if (!"VOICE".equals(callType) && !"VIDEO".equals(callType)) {
+                    message.setType("CALL_FAILED");
+                    return message;
+                }
+
                 synchronized (activeCalls) {
                     if (activeCalls.containsKey(fromUserId) || activeCalls.containsKey(toUserId)) {
-                        message.put("type", "CALL_BUSY_SERVER");
+                        message.setType("CALL_BUSY_SERVER");
                         return message;
                     }
                     activeCalls.put(fromUserId, -1L);
                     activeCalls.put(toUserId, -1L);
-                }
-
-                if (!"VOICE".equals(callType) && !"VIDEO".equals(callType)) {
-                    callType = "VOICE";
                 }
 
                 try {
@@ -137,6 +150,18 @@ public class CallServiceImpl implements CallService {
                     if (callLogId != null) {
                         activeCalls.put(fromUserId, callLogId);
                         activeCalls.put(toUserId, callLogId);
+
+                        final Long finalCallLogId = callLogId;
+                        scheduler.schedule(() -> {
+                            CallLog log = callLogRepository.findById(finalCallLogId).orElse(null);
+                            if (log != null && log.getStartedAt() == null && log.getEndedAt() == null) {
+                                boolean ended = userEndCall(finalCallLogId, "MISSED", fromUserId);
+                                if (ended) {
+                                    broadcastCallLog(finalCallLogId);
+                                }
+                            }
+                        }, 35, java.util.concurrent.TimeUnit.SECONDS);
+
                     } else {
                         activeCalls.remove(fromUserId);
                         activeCalls.remove(toUserId);
@@ -147,33 +172,51 @@ public class CallServiceImpl implements CallService {
                     throw e;
                 }
             }
-            case "ANSWER" -> userMarkStarted(callLogId, fromUserId);
-            case "CALL_REJECT" -> userEndCall(callLogId, "REJECTED", fromUserId);
-            case "CALL_BUSY" -> userEndCall(callLogId, "REJECTED", fromUserId);
-            case "CALL_END" -> userEndCall(callLogId, "COMPLETED", fromUserId);
-            case "CALL_FAILED" -> userEndCall(callLogId, "FAILED", fromUserId);
-            case "CALL_TIMEOUT" -> userEndCall(callLogId, "MISSED", fromUserId);
+            case "ANSWER" -> {
+                boolean ok = userMarkStarted(callLogId, fromUserId);
+                message.setStateChanged(ok);
+            }
+            case "CALL_REJECT" -> {
+                boolean ok = userEndCall(callLogId, "REJECTED", fromUserId);
+                message.setStateChanged(ok);
+            }
+            case "CALL_BUSY" -> {
+                boolean ok = userEndCall(callLogId, "REJECTED", fromUserId);
+                message.setStateChanged(ok);
+            }
+            case "CALL_END" -> {
+                boolean ok = userEndCall(callLogId, "COMPLETED", fromUserId);
+                message.setStateChanged(ok);
+            }
+            case "CALL_FAILED" -> {
+                boolean ok = userEndCall(callLogId, "FAILED", fromUserId);
+                message.setStateChanged(ok);
+            }
+            case "CALL_TIMEOUT" -> {
+                boolean ok = userEndCall(callLogId, "MISSED", fromUserId);
+                message.setStateChanged(ok);
+            }
             default -> {}
         }
 
-        message.put("callLogId", callLogId);
+        message.setCallLogId(callLogId);
         return message;
     }
 
-    public Map<String, Object> buildEchoMessageIfNeeded(Map<String, Object> result) {
-        if ("OFFER".equals(result.get("type"))) {
+    public com.phaithanhcong.dto.CallSignalDTO buildEchoMessageIfNeeded(com.phaithanhcong.dto.CallSignalDTO result) {
+        if ("OFFER".equals(result.getType())) {
             return result;
         }
         return null;
     }
 
-    public void userProcessSignal(Map<String, Object> message) {
-        Map<String, Object> result = handleSignal(message);
+    public void userProcessSignal(com.phaithanhcong.dto.CallSignalDTO message) {
+        com.phaithanhcong.dto.CallSignalDTO result = handleSignal(message);
 
-        if ("CALL_BUSY_SERVER".equals(result.get("type"))) {
-            result.put("type", "CALL_BUSY");
+        if ("CALL_BUSY_SERVER".equals(result.getType())) {
+            result.setType("CALL_BUSY");
             messagingTemplate.convertAndSendToUser(
-                    String.valueOf(result.get("fromUserId")),
+                    String.valueOf(result.getFromUserId()),
                     "/queue/call",
                     result
             );
@@ -181,25 +224,24 @@ public class CallServiceImpl implements CallService {
         }
 
         messagingTemplate.convertAndSendToUser(
-                String.valueOf(result.get("toUserId")),
+                String.valueOf(result.getToUserId()),
                 "/queue/call",
                 result
         );
 
-        Map<String, Object> echo = buildEchoMessageIfNeeded(result);
+        com.phaithanhcong.dto.CallSignalDTO echo = buildEchoMessageIfNeeded(result);
         if (echo != null) {
             messagingTemplate.convertAndSendToUser(
-                    String.valueOf(result.get("fromUserId")),
+                    String.valueOf(result.getFromUserId()),
                     "/queue/call",
                     echo
             );
         }
 
-        String type = String.valueOf(result.get("type"));
-        if ("CALL_REJECT".equals(type) || "CALL_BUSY".equals(type) || "CALL_END".equals(type) || "CALL_FAILED".equals(type) || "CALL_TIMEOUT".equals(type)) {
-            Long callLogId = result.get("callLogId") != null
-                    ? Long.valueOf(String.valueOf(result.get("callLogId")))
-                    : null;
+        String type = result.getType();
+        boolean stateChanged = Boolean.TRUE.equals(result.getStateChanged());
+        if (("CALL_REJECT".equals(type) || "CALL_BUSY".equals(type) || "CALL_END".equals(type) || "CALL_FAILED".equals(type) || "CALL_TIMEOUT".equals(type)) && stateChanged) {
+            Long callLogId = result.getCallLogId();
             broadcastCallLog(callLogId);
         }
     }
@@ -214,8 +256,24 @@ public class CallServiceImpl implements CallService {
             return;
         }
 
+        com.phaithanhcong.model.MessageType typeCall = messageTypeRepository.findByCode("CALL").orElseGet(() -> {
+            com.phaithanhcong.model.MessageType t = com.phaithanhcong.model.MessageType.builder().code("CALL").build();
+            return messageTypeRepository.save(t);
+        });
+
+        com.phaithanhcong.model.Message msg = com.phaithanhcong.model.Message.builder()
+                .messageType(typeCall)
+                .callLogId(callLog.getId())
+                .senderId(callLog.getCallerId())
+                .receiverId(callLog.getCalleeId())
+                .sentAt(LocalDateTime.now())
+                .content(callLog.getCallType() + " call")
+                .build();
+        messageRepository.save(msg);
+
         Map<String, Object> outgoing = new HashMap<>();
         outgoing.put("type", "CALL");
+        outgoing.put("callLogId", callLogId);
         outgoing.put("callerId", callLog.getCallerId());
         outgoing.put("calleeId", callLog.getCalleeId());
         outgoing.put("callType", callLog.getCallType());
