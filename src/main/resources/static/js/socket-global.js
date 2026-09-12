@@ -2,6 +2,7 @@
 // Requires `currentUserId` global var to be defined by the page before this script runs.
 var GlobalSocket = {
   stompClient: null,
+  isConnected: false,
 
   connect: function () {
     var self = this;
@@ -11,12 +12,23 @@ var GlobalSocket = {
         return socket;
       },
       onConnect: function () {
+        self.isConnected = true;
         self.stompClient.subscribe("/user/queue/call", function (message) {
           self.onCallSignal(JSON.parse(message.body));
         });
         self.stompClient.subscribe("/user/queue/message", function (message) {
           self.onMessage(JSON.parse(message.body));
         });
+
+        // Process pending call after connection is established
+        var pending = sessionStorage.getItem("pendingIncomingCall");
+        if (pending) {
+          sessionStorage.removeItem("pendingIncomingCall");
+          var offer = JSON.parse(pending);
+          if (typeof otherUserId !== "undefined" && Number(offer.fromUserId) === Number(otherUserId)) {
+            if (typeof CallManager !== "undefined") CallManager.onSignalReceived(offer);
+          }
+        }
       },
       onStompError: function (frame) {
         console.warn("STOMP error:", frame);
@@ -36,7 +48,7 @@ var GlobalSocket = {
       typeof otherUserId !== "undefined" &&
       Number(message.fromUserId) === Number(otherUserId);
 
-    if (window.CallManager && (!isIncomingOffer || isOpenConversation)) {
+    if (typeof CallManager !== "undefined" && (!isIncomingOffer || isOpenConversation)) {
       CallManager.onSignalReceived(message);
       return;
     }

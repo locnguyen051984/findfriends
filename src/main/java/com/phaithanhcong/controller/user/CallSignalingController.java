@@ -25,6 +25,6 @@ public class CallSignalingController {
             return;
         }
 
-        callService.userProcessSignal(message);
+        callService.processSignal(message);
     }
 }

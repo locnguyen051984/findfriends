@@ -38,4 +38,8 @@ public class Message {
 
     @Column(name = "call_log_id")
     private Long callLogId;
+
+    @Column(name = "is_read", nullable = false)
+    @Builder.Default
+    private Boolean isRead = false;
 }

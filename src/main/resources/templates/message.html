@@ -432,14 +432,7 @@
           if (e.key === "Enter") ChatUI.sendMessage();
         });
       document.addEventListener("DOMContentLoaded", function () {
-        var pending = sessionStorage.getItem("pendingIncomingCall");
-        if (!pending) return;
-        sessionStorage.removeItem("pendingIncomingCall");
-
-        var offer = JSON.parse(pending);
-        if (Number(offer.fromUserId) === Number(otherUserId)) {
-          CallManager.onSignalReceived(offer);
-        }
+        // Pending call logic moved to socket-global.js
       });
     </script>
     <div class="lightbox" id="lightbox" onclick="ChatUI.closeImage()">
