@@ -13,6 +13,7 @@ const CallManager = {
   micEnabled: true,
   camEnabled: true,
   pendingIceCandidates: [],
+  pendingOutgoingIceCandidates: [],
   pendingOffer: null,
   remoteDescriptionSet: false,
   callTimeoutTimer: null,
@@ -30,7 +31,23 @@ const CallManager = {
 
   onSignalReceived(message) {
     if (Number(message.fromUserId) === Number(currentUserId)) {
-      if (message.type === "OFFER") return void (this.callLogId = message.callLogId);
+      if (message.type === "OFFER") {
+        this.callLogId = message.callLogId;
+        if (this.pendingOutgoingIceCandidates && this.pendingOutgoingIceCandidates.length > 0) {
+          this.pendingOutgoingIceCandidates.forEach(c => this.sendSignal("ICE_CANDIDATE", JSON.stringify(c)));
+          this.pendingOutgoingIceCandidates = [];
+        }
+        return;
+      }
+      if (message.type === "ANSWER") {
+        this.clearTimeoutTimer();
+        if (!this.localStream) this.cleanup();
+        return;
+      }
+      // NOTE: Allow CALL_BUSY and CALL_FAILED to echo back to self. 
+      // This is a defensive logic to ensure that if the server broadcasts a busy/failed state 
+      // to all connected tabs of the current user, this tab will correctly process the end of the call.
+      // (Even if the server currently only routes to the peer, keeping this prevents future refactor bugs).
       if (!["CALL_BUSY", "CALL_FAILED"].includes(message.type)) return;
     }
 
@@ -147,7 +164,15 @@ const CallManager = {
 
   createPeerConnection() {
     this.peerConnection = new RTCPeerConnection(ICE_SERVERS);
-    this.peerConnection.onicecandidate = e => e.candidate && this.sendSignal("ICE_CANDIDATE", JSON.stringify(e.candidate));
+    this.peerConnection.onicecandidate = e => {
+      if (e.candidate) {
+        if (!this.callLogId) {
+          this.pendingOutgoingIceCandidates.push(e.candidate);
+        } else {
+          this.sendSignal("ICE_CANDIDATE", JSON.stringify(e.candidate));
+        }
+      }
+    };
     this.peerConnection.ontrack = e => document.getElementById("remoteVideo").srcObject = e.streams[0];
     this.peerConnection.oniceconnectionstatechange = () => {
       const state = this.peerConnection.iceConnectionState;
@@ -233,7 +258,7 @@ const CallManager = {
 
     Object.assign(this, {
       callLogId: null, callType: null, direction: null,
-      pendingIceCandidates: [], pendingOffer: null, remoteDescriptionSet: false,
+      pendingIceCandidates: [], pendingOutgoingIceCandidates: [], pendingOffer: null, remoteDescriptionSet: false,
       micEnabled: true, camEnabled: true
     });
 
@@ -261,7 +286,7 @@ const UI = {
         if (el) el.style.display = "none";
       });
   },
-  showCallingUI() { document.getElementById("callingButtons").style.display = "block"; },
+  showCallingUI() { document.getElementById("callingButtons").style.display = "flex"; },
   attachLocalStream(stream, type) {
     if (type === "VIDEO") {
       document.getElementById("videoContainer").style.display = "block";
@@ -270,12 +295,12 @@ const UI = {
   },
   showIncomingCallUI(callType) {
     this.showCallModal(`${otherUserName} đang gọi ${callType === "VIDEO" ? "video" : "thoại"}...`);
-    document.getElementById("incomingCallButtons").style.display = "block";
+    document.getElementById("incomingCallButtons").style.display = "flex";
   },
   showActiveCallUI(callType) {
     document.getElementById("callStatusText").textContent = `Đang trong cuộc gọi với ${otherUserName}`;
-    document.getElementById("activeCallButtons").style.display = "block";
-    document.getElementById("toggleCamBtn").style.display = callType === "VIDEO" ? "inline-block" : "none";
+    document.getElementById("activeCallButtons").style.display = "flex";
+    document.getElementById("toggleCamBtn").style.display = callType === "VIDEO" ? "inline-flex" : "none";
     document.getElementById("callingButtons").style.display = "none";
   }
 };

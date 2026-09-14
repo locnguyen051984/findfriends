@@ -81,7 +81,6 @@
     var otherUserName = /*[[${otherUser.userName}]]*/ "";
   </script>
   <script src="/js/socket-global.js"></script>
-  <script src="/js/call.js"></script>
   <body>
     <div style="margin-bottom: 12px">
       <a
@@ -95,124 +94,22 @@
       Chat với <span th:text="${otherUser.userName}"></span> (ID:
       <span th:text="${otherUser.id}"></span>)
     </h2>
+    <script>
+      function openCallWindow(url) {
+        var w = 800;
+        var h = 600;
+        var left = (screen.width / 2) - (w / 2);
+        var top = (screen.height / 2) - (h / 2);
+        window.open(url, 'CallWindow', 'width=' + w + ',height=' + h + ',top=' + top + ',left=' + left);
+      }
+    </script>
     <div style="margin-bottom: 12px">
-      <button type="button" onclick="CallManager.startCall('VOICE')">
+      <button type="button" th:attr="onclick=|openCallWindow('/call-room?action=start&type=VOICE&calleeId=' + ${otherUser.id})|">
         📞 Gọi thoại
       </button>
-      <button type="button" onclick="CallManager.startCall('VIDEO')">
+      <button type="button" th:attr="onclick=|openCallWindow('/call-room?action=start&type=VIDEO&calleeId=' + ${otherUser.id})|">
         🎥 Gọi video
       </button>
-    </div>
-
-    <!-- Call Modal -->
-    <div
-      id="callModal"
-      style="
-        display: none;
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.6);
-        z-index: 999;
-        justify-content: center;
-        align-items: center;
-      "
-    >
-      <div
-        style="
-          background: #fff;
-          padding: 24px;
-          border-radius: 8px;
-          text-align: center;
-          min-width: 300px;
-        "
-      >
-        <div
-          id="callStatusText"
-          style="font-size: 16px; margin-bottom: 16px"
-        ></div>
-
-        <div id="videoContainer" style="display: none; margin-bottom: 16px">
-          <video
-            id="remoteVideo"
-            autoplay
-            playsinline
-            style="width: 100%; border-radius: 6px; background: #000"
-          ></video>
-          <video
-            id="localVideo"
-            autoplay
-            playsinline
-            muted
-            style="
-              width: 80px;
-              position: absolute;
-              bottom: 80px;
-              right: 24px;
-              border-radius: 6px;
-              border: 2px solid #fff;
-            "
-          ></video>
-        </div>
-
-        <div id="incomingCallButtons" style="display: none">
-          <button
-            type="button"
-            onclick="CallManager.acceptCall()"
-            style="
-              background: green;
-              color: #fff;
-              padding: 8px 16px;
-              margin-right: 8px;
-            "
-          >
-            Chấp nhận
-          </button>
-          <button
-            type="button"
-            onclick="CallManager.rejectCall()"
-            style="background: red; color: #fff; padding: 8px 16px"
-          >
-            Từ chối
-          </button>
-        </div>
-        <div id="callingButtons" style="display: none">
-          <button
-            type="button"
-            onclick="CallManager.endCall()"
-            style="background: red; color: #fff; padding: 8px 16px"
-          >
-            Hủy cuộc gọi
-          </button>
-        </div>
-
-        <div id="activeCallButtons" style="display: none">
-          <button
-            type="button"
-            id="toggleMicBtn"
-            onclick="CallManager.toggleMic()"
-          >
-            🎤 Tắt mic
-          </button>
-          <button
-            type="button"
-            id="toggleCamBtn"
-            onclick="CallManager.toggleCam()"
-            style="display: none"
-          >
-            📷 Tắt cam
-          </button>
-          <button
-            type="button"
-            onclick="CallManager.endCall()"
-            style="background: red; color: #fff; padding: 8px 16px"
-          >
-            Kết thúc
-          </button>
-        </div>
-      </div>
     </div>
 
     <div th:if="${error}" class="error" th:text="${error}"></div>

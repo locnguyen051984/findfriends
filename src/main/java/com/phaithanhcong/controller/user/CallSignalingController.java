@@ -14,7 +14,7 @@ public class CallSignalingController {
     private final CallService callService;
 
     @MessageMapping("/call.signal")
-    public void handleSignal(@Valid CallSignalDTO message, java.security.Principal principal) {
+    public void handleSignal(@Valid CallSignalDTO message, java.security.Principal principal, @org.springframework.messaging.handler.annotation.Header("simpSessionId") String sessionId) {
         if (principal == null) return;
         Long principalId = Long.valueOf(principal.getName());
 
@@ -25,6 +25,6 @@ public class CallSignalingController {
             return;
         }
 
-        callService.processSignal(message);
+        callService.processSignal(message, sessionId);
     }
 }

@@ -3,6 +3,6 @@ package com.phaithanhcong.service.user;
 import com.phaithanhcong.dto.CallSignalDTO;
 
 public interface CallService {
-    void processSignal(CallSignalDTO message);
-    void releaseUserBusyState(Long userId);
+    void processSignal(CallSignalDTO message, String sessionId);
+    void releaseUserBusyState(Long userId, String sessionId);
 }

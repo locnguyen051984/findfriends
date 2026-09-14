@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title th:text="'Đang gọi ' + ${otherUser.userName}"></title>
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7/bundles/stomp.umd.min.js"></script>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        background: #222;
+        color: white;
+        font-family: sans-serif;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        overflow: hidden;
+      }
+      .call-container {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        position: relative;
+      }
+      .status-text {
+        font-size: 20px;
+        font-weight: 500;
+        margin-top: 20px;
+        z-index: 10;
+        text-align: center;
+        padding: 10px 24px;
+        background: rgba(0,0,0,0.5);
+        border-radius: 20px;
+        backdrop-filter: blur(5px);
+        color: white;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      }
+      #videoContainer {
+        width: 100%;
+        height: 100%;
+        position: absolute;
+        top: 0;
+        left: 0;
+        background: #111;
+      }
+      #remoteVideo {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+      #localVideo {
+        width: 160px;
+        position: absolute;
+        bottom: 110px;
+        right: 24px;
+        border-radius: 12px;
+        border: 2px solid rgba(255,255,255,0.8);
+        box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+        object-fit: cover;
+        z-index: 5;
+      }
+      .controls {
+        position: absolute;
+        bottom: 30px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        flex-direction: row;
+        justify-content: center;
+        align-items: center;
+        gap: 16px;
+        z-index: 10;
+        width: max-content;
+        max-width: 90%;
+      }
+      button {
+        display: inline-flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: center;
+        height: 48px;
+        padding: 0 24px;
+        border: none;
+        border-radius: 24px;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+        gap: 8px;
+        white-space: nowrap;
+      }
+      .btn-accept { background: #28a745; color: white; }
+      .btn-reject { background: #dc3545; color: white; }
+      .btn-toggle { background: #4a4a4a; color: white; }
+    </style>
+  </head>
+  <body>
+    <div class="call-container">
+      <div id="callStatusText" class="status-text">Đang kết nối...</div>
+
+      <div id="videoContainer" style="display: none;">
+        <video id="remoteVideo" autoplay playsinline></video>
+        <video id="localVideo" autoplay playsinline muted></video>
+      </div>
+
+      <div id="incomingCallButtons" class="controls" style="display: none">
+        <button class="btn-accept" onclick="acceptIncomingCall()">📞 Chấp nhận</button>
+        <button class="btn-reject" onclick="CallManager.rejectCall()">❌ Từ chối</button>
+      </div>
+
+      <div id="callingButtons" class="controls" style="display: none">
+        <button class="btn-reject" onclick="CallManager.endCall()">❌ Hủy cuộc gọi</button>
+      </div>
+
+      <div id="activeCallButtons" class="controls" style="display: none">
+        <button class="btn-toggle" id="toggleMicBtn" onclick="CallManager.toggleMic()">🎤 Tắt mic</button>
+        <button class="btn-toggle" id="toggleCamBtn" onclick="CallManager.toggleCam()" style="display: none">📷 Tắt cam</button>
+        <button class="btn-reject" onclick="CallManager.endCall()">❌ Kết thúc</button>
+      </div>
+    </div>
+
+    <!-- Hidden element for UI helpers to avoid errors -->
+    <div id="callModal" style="display:none"></div>
+
+    <script th:inline="javascript">
+      var currentUserId = /*[[${currentUser.id}]]*/ null;
+      var otherUserId = /*[[${otherUser.id}]]*/ null;
+      var otherUserName = /*[[${otherUser.userName}]]*/ "";
+      var callAction = /*[[${callAction}]]*/ "";
+      var callType = /*[[${callType}]]*/ "";
+      var targetCallLogId = /*[[${callLogId}]]*/ null;
+    </script>
+    <script src="/js/socket-global.js"></script>
+    <script src="/js/call.js"></script>
+
+    <script>
+      // Wait for WebSocket to connect, then start the call sequence
+      var checkConnection = setInterval(function() {
+        if (GlobalSocket.isConnected) {
+          clearInterval(checkConnection);
+          initCall();
+        }
+      }, 100);
+
+      function initCall() {
+        if (callAction === "start") {
+          CallManager.startCall(callType);
+        } else if (callAction === "answer") {
+          var pendingKey = "pendingOffer_" + targetCallLogId;
+          var pendingJson = localStorage.getItem(pendingKey);
+          
+          if (pendingJson) {
+             var offer = JSON.parse(pendingJson);
+             localStorage.removeItem(pendingKey);
+             
+             // Manually inject the offer into CallManager and show incoming UI
+             CallManager.callLogId = offer.callLogId;
+             CallManager.callType = offer.callType;
+             CallManager.direction = "INCOMING";
+             CallManager.pendingOffer = JSON.parse(offer.payload);
+             // User already clicked 'Accept' in the main window modal, auto accept here.
+             CallManager.acceptCall();
+          } else {
+             document.getElementById("callStatusText").textContent = "Không tìm thấy thông tin cuộc gọi hoặc cuộc gọi đã kết thúc.";
+             setTimeout(() => window.close(), 3000);
+          }
+        }
+      }
+
+      function acceptIncomingCall() {
+          CallManager.acceptCall();
+      }
+
+      // Override UI helpers to work inside the popup window properly
+      UI.showCallModal = function(statusText) {
+          document.getElementById("callStatusText").textContent = statusText;
+          document.getElementById("callStatusText").style.display = "block";
+      };
+      UI.hideCallModal = function() {
+          // Keep video container, just hide controls
+          ["incomingCallButtons", "activeCallButtons", "callingButtons"].forEach(id => {
+              const el = document.getElementById(id);
+              if (el) el.style.display = "none";
+          });
+          // Close the window after a short delay so user sees "Cuộc gọi kết thúc"
+          setTimeout(() => window.close(), 1500);
+      };
+      
+      // Override cleanup to ensure window closes
+      var originalCleanup = CallManager.cleanup;
+      CallManager.cleanup = function() {
+          originalCleanup.call(this);
+      };
+    </script>
+  </body>
+</html>

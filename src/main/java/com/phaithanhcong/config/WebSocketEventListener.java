@@ -18,12 +18,13 @@ public class WebSocketEventListener {
     @EventListener
     public void handleWebSocketDisconnectListener(SessionDisconnectEvent event) {
         StompHeaderAccessor headerAccessor = StompHeaderAccessor.wrap(event.getMessage());
+        String sessionId = headerAccessor.getSessionId();
         Principal principal = headerAccessor.getUser();
         if (principal != null && principal.getName() != null) {
             try {
                 Long userId = Long.valueOf(principal.getName());
                 // Giải phóng trạng thái bận khi người dùng rớt kết nối
-                callService.releaseUserBusyState(userId);
+                callService.releaseUserBusyState(userId, sessionId);
             } catch (NumberFormatException ignored) {
             }
         }
