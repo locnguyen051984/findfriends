@@ -1,5 +1,7 @@
 package com.phaithanhcong.controller.user;
 
+import com.phaithanhcong.model.CallLog;
+import com.phaithanhcong.repository.CallLogRepository;
 import com.phaithanhcong.model.User;
 import com.phaithanhcong.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +17,7 @@ import jakarta.servlet.http.HttpSession;
 public class CallRoomController {
 
     private final UserRepository userRepository;
+    private final CallLogRepository callLogRepository;
 
     @GetMapping("/call-room")
     public String getCallRoom(
@@ -34,6 +37,21 @@ public class CallRoomController {
         Long otherUserId = "start".equals(action) ? calleeId : callerId;
         if (otherUserId == null) {
             return "redirect:/home";
+        }
+
+        if (callLogId != null) {
+            CallLog callLog = callLogRepository.findById(callLogId).orElse(null);
+            if (callLog == null) {
+                return "redirect:/home";
+            }
+            Long currentId = currentUser.getId();
+            boolean isParticipant = (currentId.equals(callLog.getCallerId()) && otherUserId.equals(callLog.getCalleeId())) ||
+                                    (currentId.equals(callLog.getCalleeId()) && otherUserId.equals(callLog.getCallerId()));
+            if (!isParticipant) {
+                return "redirect:/home";
+            }
+        } else if ("answer".equals(action)) {
+            return "redirect:/home"; // cannot answer without a callLogId
         }
 
         User otherUser = userRepository.findById(otherUserId).orElse(null);

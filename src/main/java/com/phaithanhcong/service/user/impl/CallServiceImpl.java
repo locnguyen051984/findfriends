@@ -19,14 +19,13 @@ import org.springframework.messaging.simp.user.SimpUser;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import org.springframework.scheduling.TaskScheduler;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -39,11 +38,11 @@ public class CallServiceImpl implements CallService {
     private final MessageTypeRepository messageTypeRepository;
     private final SimpMessagingTemplate messagingTemplate;
     private final SimpUserRegistry simpUserRegistry;
+    private final TaskScheduler taskScheduler;
 
 
     private final Map<Long, CallState> activeCalls = new ConcurrentHashMap<>();
     private final Map<Long, IceCacheEntry> iceCache = new ConcurrentHashMap<>();
-    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(10);
 
     // ==========================================
     // PUBLIC API (CallService Interface)
@@ -51,7 +50,7 @@ public class CallServiceImpl implements CallService {
     
     @jakarta.annotation.PostConstruct
     public void startCleanupJob() {
-        scheduler.scheduleAtFixedRate(() -> {
+        taskScheduler.scheduleAtFixedRate(() -> {
             long threshold = System.currentTimeMillis() - 120000; // 2 minutes
             iceCache.entrySet().removeIf(e -> e.getValue().lastActive < threshold);
             activeCalls.entrySet().removeIf(e -> {
@@ -70,7 +69,7 @@ public class CallServiceImpl implements CallService {
                 }
                 return false;
             });
-        }, 2, 2, TimeUnit.MINUTES);
+        }, Duration.ofMinutes(2));
     }
 
 
@@ -91,16 +90,16 @@ public class CallServiceImpl implements CallService {
             Long actualCaller = result.getFromUserId();
             result.setFromUserId(result.getToUserId());
             result.setToUserId(actualCaller);
-            sendToUser(actualCaller, result);
+            sendCallSignal(actualCaller, result);
             return;
         }
 
         if ("OFFER".equals(originalType) && "CALL_FAILED".equals(result.getType())) {
-            sendToUser(result.getFromUserId(), result);
+            sendCallSignal(result.getFromUserId(), result);
             return;
         }
 
-        sendToUser(result.getToUserId(), result);
+        sendCallSignal(result.getToUserId(), result);
 
         // Forward cached ICE candidates when ANSWER is received
         if ("ANSWER".equals(originalType) && result.getCallLogId() != null) {
@@ -109,14 +108,14 @@ public class CallServiceImpl implements CallService {
                 for (CallSignalDTO ice : cached.candidates) {
                     // Only forward ICE candidates from the other user (caller to callee)
                     if (!ice.getFromUserId().equals(result.getFromUserId())) {
-                        sendToUser(result.getFromUserId(), ice);
+                        sendCallSignal(result.getFromUserId(), ice);
                     }
                 }
             }
         }
 
         Optional.ofNullable(buildEchoMessageIfNeeded(result))
-                .ifPresent(echo -> sendToUser(result.getFromUserId(), echo));
+                .ifPresent(echo -> sendCallSignal(result.getFromUserId(), echo));
 
         if (Boolean.TRUE.equals(result.getStateChanged()) && 
             Set.of("CALL_REJECT", "CALL_BUSY", "CALL_END", "CALL_FAILED", "CALL_TIMEOUT").contains(result.getType())) {
@@ -159,7 +158,7 @@ public class CallServiceImpl implements CallService {
                 signal.setFromUserId(userId);
                 signal.setToUserId(peerId);
                 signal.setCallLogId(callLogId);
-                sendToUser(peerId, signal);
+                sendCallSignal(peerId, signal);
 
                 String recordStatus = hasStarted ? "COMPLETED" : "FAILED";
                 if (userEndCall(callLogId, recordStatus, userId)) {
@@ -200,13 +199,13 @@ public class CallServiceImpl implements CallService {
                         activeCalls.put(fromUserId, new CallState(callLogId, sessionId));
                         activeCalls.put(toUserId, new CallState(callLogId, null));
                         final Long finalCallLogId = callLogId;
-                        scheduler.schedule(() -> {
+                        taskScheduler.schedule(() -> {
                             callLogRepository.findById(finalCallLogId).ifPresent(log -> {
                                 if (log.getStartedAt() == null && log.getEndedAt() == null && userEndCall(finalCallLogId, "MISSED", fromUserId)) {
                                     broadcastCallLog(finalCallLogId);
                                 }
                             });
-                        }, 35, TimeUnit.SECONDS);
+                        }, Instant.now().plusSeconds(35));
                     } else {
                         activeCalls.remove(fromUserId);
                         activeCalls.remove(toUserId);
@@ -305,12 +304,12 @@ public class CallServiceImpl implements CallService {
             outgoing.put("time", callLog.getCreatedAt().toString());
             outgoing.put("durationText", formatCallDuration(callLog));
 
-            sendToUser(callLog.getCallerId(), outgoing);
-            sendToUser(callLog.getCalleeId(), outgoing);
+            sendChatMessage(callLog.getCallerId(), outgoing);
+            sendChatMessage(callLog.getCalleeId(), outgoing);
         });
     }
 
-    private void sendToUser(Long userId, CallSignalDTO payload) {
+    private void sendCallSignal(Long userId, CallSignalDTO payload) {
         if (simpUserRegistry.getUser(String.valueOf(userId)) == null) {
             log.warn("Cannot send signal to user {} because they are offline", userId);
             return;
@@ -318,7 +317,7 @@ public class CallServiceImpl implements CallService {
         messagingTemplate.convertAndSendToUser(String.valueOf(userId), "/queue/call", payload);
     }
 
-    private void sendToUser(Long userId, Map<String, Object> payload) {
+    private void sendChatMessage(Long userId, Map<String, Object> payload) {
         if (simpUserRegistry.getUser(String.valueOf(userId)) == null) {
             log.warn("Cannot send message to user {} because they are offline", userId);
             return;
