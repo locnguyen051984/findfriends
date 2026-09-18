@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 @Controller
 public class AuthController {
 
+        // Khởi tạo AuthService
     private final AuthService authService;
     @GetMapping("/")
     public String userLogin() {
