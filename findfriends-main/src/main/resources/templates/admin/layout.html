@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="vi"
+      xmlns:th="http://www.thymeleaf.org"
+      th:fragment="html">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+    <title>FindFriends Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+          rel="stylesheet">
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet"
+          th:href="@{/css/style.css}">
+</head>
+<body>
+<div class="admin-layout">
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <!-- LOGO -->
+        <div class="sidebar-header">
+            <h2>FindFriends</h2>
+        </div>
+        <!-- ADMIN -->
+        <div class="sidebar-user">
+            <i class="fa-solid fa-user-shield"></i>
+            <span>ADMIN</span>
+        </div>
+        <!-- 3 NÚT ADMIN -->
+        <nav class="sidebar-menu">
+            <!-- DASHBOARD -->
+            <button type="button"
+                    class="sidebar-link"
+                    th:onclick="|window.location.href='@{/admin}'|">
+                <i class="fa-solid fa-chart-line"></i>
+                <span>Dashboard</span>
+            </button>
+            <!-- QUẢN LÝ NGƯỜI DÙNG -->
+            <button type="button"
+                    class="sidebar-link"
+                    th:onclick="|window.location.href='@{/admin/users}'|">
+                <i class="fa-solid fa-users"></i>
+                <span>Quản lý người dùng</span>
+            </button>
+            <!-- THANH TOÁN -->
+            <button type="button"
+                    class="sidebar-link"
+                    th:onclick="|window.location.href='@{/admin/payments}'|">
+                <i class="fa-solid fa-credit-card"></i>
+                <span>Thanh toán & Premium</span>
+            </button>
+        </nav>
+        <!-- ĐĂNG XUẤT -->
+        <div class="sidebar-footer">
+            <button type="button"
+                    class="sidebar-link logout-link"
+                    th:onclick="|window.location.href='@{/logout}'|">
+                <i class="fa-solid fa-right-from-bracket"></i>
+                <span>Đăng xuất</span>
+            </button>
+        </div>
+    </aside>
+    <!-- NỘI DUNG -->
+    <main class="main-content">
+        <header class="topbar">
+            <div class="topbar-title">
+                <h1>Welcome, Administrator</h1>
+            </div>
+        </header>
+        <div class="content-area">
+            <div th:replace="~{::content}">
+            </div>
+        </div>
+    </main>
+</div>
+</body>
+</html>
